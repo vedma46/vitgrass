@@ -18,7 +18,6 @@
   #app{display:flex;gap:12px;height:100%;padding:12px;overflow:hidden}
   .left{flex:1;min-width:0;display:flex;flex-direction:column}
   #hint{font-size:12px;line-height:1.2;padding:6px 4px 2px 4px;opacity:.85}
-  /* mobile bar */
   .mobilebar{padding:6px 4px 2px 4px; display:flex; gap:8px; align-items:center; flex-wrap:wrap}
   .mobilebar .pill{display:inline-flex; align-items:center}
   select#toolSelect{font-size:14px;border:1px solid var(--tabb);border-radius:8px;padding:6px 8px;background:#fff}
@@ -44,7 +43,6 @@
   .icon{width:22px;height:22px;display:inline-block;vertical-align:middle}
   .bar{height:8px;background:#edf2f7;border-radius:6px;overflow:hidden;margin-top:4px}
   .fill{height:100%;background:#b5e0bd;width:0%}
-  /* overlays */
   #overlay,#tutor,#levelup{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.4);z-index:10}
   .panel{background:#fff;border-radius:16px;border:1px solid var(--line);padding:18px;max-width:520px;width:min(92vw,520px);box-shadow:0 10px 30px rgba(0,0,0,.15)}
   .panel h2{margin:0 0 12px}
@@ -60,7 +58,6 @@
   <div class="left">
     <div id="hint">1: Семена • 2: Лейка • 3: Ножницы • 4: Удобрение | ←/→ — смена вида семян | S/L — сейв/лоад, R — новая игра</div>
 
-    <!-- MOBILE TOOL SELECT -->
     <div class="mobilebar">
       <label class="pill" style="gap:6px">
         Инструмент:
@@ -137,7 +134,6 @@
   </div>
 </div>
 
-<!-- LEVEL-UP POPUP -->
 <div id="levelup">
   <div class="panel" id="luPanel">
     <h2 id="luTitle">Новый уровень!</h2>
@@ -346,51 +342,45 @@ let layout={w:1200,h:720,margin:16,cols:3,rows:4,potW:120,potH:120,gapX:18,gapY:
 let potRects=Array.from({length:12},()=>({x:0,y:0,w:0,h:0}));
 let cachedLeaf=null;
 
-/* устойчивое измерение размеров враппера */
+/* устойчивое измерение враппера */
 function measureWrap(){
-  const r = wrap.getBoundingClientRect(); // стабильнее на iOS
+  const r = wrap.getBoundingClientRect();
   return { w: Math.max(1, Math.round(r.width)), h: Math.max(1, Math.round(r.height)) };
 }
 
-function resizeCanvas(){
-  // recalibrate DPR каждый раз (на iOS при повороте меняется)
-  DPR=(window.devicePixelRatio||1);
-
-  const {w,h}=measureWrap();
-  canvas.width=Math.max(1,Math.floor(w*DPR));
-  canvas.height=Math.max(1,Math.floor(h*DPR));
-  canvas.style.width=w+"px"; canvas.style.height=h+"px";
-
-  // сброс и установка трансформа
-  ctx.setTransform(DPR,0,0,DPR,0,0);
-
-  rebuildLayout(w,h);
-  if(!cachedLeaf) cachedLeaf=makeLeaf(Math.max(18,Math.floor(Math.min(w,h)*0.02)));
-}
-
+/* НОВЫЙ подбор кол-ва колонок и размера горшка — всегда помещаем 12 штук */
 function rebuildLayout(w,h){
   layout.w=w; layout.h=h;
-  layout.margin=Math.max(12,Math.floor(w*0.014));
+  layout.margin=Math.max(8,Math.floor(w*0.014));
   layout.gridLeft=layout.margin; layout.gridTop=Math.floor(layout.margin*1.4);
   layout.gridW=w-layout.margin*2; layout.gridH=h-layout.gridTop-Math.floor(layout.margin*0.8);
+
   let best=null;
-  for(let cols=2; cols<=5; cols++){
+  const MIN_SIZE = 30; // можно ужиматься до 30px в ландшафте
+  for(let cols=2; cols<=6; cols++){
     const rows=Math.ceil(12/cols);
-    const gapX=Math.max(10,Math.floor(layout.gridW*0.018));
-    const gapY=Math.max(12,Math.floor(layout.gridH*0.03));
-    const potW=Math.floor((layout.gridW-gapX*(cols-1))/cols);
-    const potH=Math.floor((layout.gridH-gapY*(rows-1))/rows);
-    const size=Math.min(potW,potH);
-    if(size<80) continue;
-    if(!best||size>best.size) best={size,cols,rows,gapX,gapY};
+    // делаем маленькие зазоры, чтобы не съедали высоту
+    const gapX = Math.max(6, Math.floor(layout.gridW*0.012));
+    const gapY = Math.max(6, Math.floor(layout.gridH*0.025));
+    const sizeW = Math.floor((layout.gridW - gapX*(cols-1))/cols);
+    const sizeH = Math.floor((layout.gridH - gapY*(rows-1))/rows);
+    const size = Math.min(sizeW, sizeH);
+    if(size < MIN_SIZE) continue;
+    if(!best || size>best.size) best={size,cols,rows,gapX,gapY};
   }
-  let size,cols,rows,gapX,gapY;
+  // если совсем мало места — берём минимально возможное
   if(!best){
-    cols=2; rows=Math.ceil(12/cols);
-    gapX=Math.max(8,Math.floor(layout.gridW*0.015));
-    gapY=Math.max(10,Math.floor(layout.gridH*0.025));
-    size=Math.max(60,Math.min(Math.floor((layout.gridW-gapX*(cols-1))/cols),Math.floor((layout.gridH-gapY*(rows-1))/rows)));
-  } else ({size,cols,rows,gapX,gapY}=best);
+    // пробуем максимальные колонки, чтобы сделать горшки помельче
+    const cols=6, rows=Math.ceil(12/6);
+    const gapX=6, gapY=6;
+    const size=Math.max(18, Math.min(
+      Math.floor((layout.gridW - gapX*(cols-1))/cols),
+      Math.floor((layout.gridH - gapY*(rows-1))/rows)
+    ));
+    best={size,cols,rows,gapX,gapY};
+  }
+
+  const {size,cols,rows,gapX,gapY}=best;
   layout.cols=cols; layout.rows=rows; layout.potW=layout.potH=size; layout.gapX=gapX; layout.gapY=gapY;
   const totalW=size*cols+gapX*(cols-1), totalH=size*rows+gapY*(rows-1);
   layout.offsetX=layout.gridLeft+Math.max(0,Math.floor((layout.gridW-totalW)/2));
@@ -402,6 +392,18 @@ function rebuildLayout(w,h){
     potRects[i]={x,y,w:size,h:size};
   }
 }
+
+function resizeCanvas(){
+  DPR=(window.devicePixelRatio||1);
+  const {w,h}=measureWrap();
+  canvas.width=Math.max(1,Math.floor(w*DPR));
+  canvas.height=Math.max(1,Math.floor(h*DPR));
+  canvas.style.width=w+"px"; canvas.style.height=h+"px";
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  rebuildLayout(w,h);
+  if(!cachedLeaf) cachedLeaf=makeLeaf(Math.max(18,Math.floor(Math.min(w,h)*0.02)));
+}
+
 function makeLeaf(px){
   const c=document.createElement("canvas"); c.width=px; c.height=px; const g=c.getContext("2d");
   g.strokeStyle="rgba(20,100,60,0.22)"; g.lineWidth=Math.max(2,px/14);
@@ -437,8 +439,8 @@ function roundRect(x,y,w,h,r,fill,stroke){
 function rgb([r,g,b]){ return `rgb(${r},${g},${b})`; }
 function tint([r,g,b],k){ return [Math.floor(r*k),Math.floor(g*k),Math.floor(b*k)]; }
 function drawShelves(){
-  const shelfH=Math.max(10,Math.floor(layout.potH/14));
-  const under =Math.max(6, Math.floor(layout.potH/18));
+  const shelfH=Math.max(6,Math.floor(layout.potH/14));
+  const under =Math.max(4, Math.floor(layout.potH/18));
   const totalW=layout.cols*layout.potW + (layout.cols-1)*layout.gapX;
   ctx.fillStyle="#dce6dc";
   for(let r=0;r<layout.rows;r++){
@@ -450,30 +452,30 @@ function drawPots(){
   for(let i=0;i<12;i++){
     const p=state.pots[i], r=potRects[i];
     ctx.fillStyle="#966e50"; roundRect(r.x,r.y,r.w,r.h,10,true,false);
-    ctx.fillStyle="#78543c"; roundRect(r.x,r.y,r.w,Math.max(18,Math.floor(r.h/6)),10,true,false);
+    ctx.fillStyle="#78543c"; roundRect(r.x,r.y,r.w,Math.max(12,Math.floor(r.h/6)),10,true,false);
     const soil={x:r.x+Math.floor(r.w*.07), y:r.y+Math.floor(r.h*.2), w:r.w-Math.floor(r.w*.14), h:r.h-Math.floor(r.h*.26)};
     ctx.fillStyle="rgb(95,70,55)"; roundRect(soil.x,soil.y,soil.w,soil.h,8,true,false);
-    const waterY=r.y+r.h - Math.max(6,Math.floor(r.h/18));
+    const waterY=r.y+r.h - Math.max(4,Math.floor(r.h/18));
     const mw=Math.floor(soil.w * p.moisture);
-    ctx.fillStyle="#5082c8"; roundRect(soil.x,waterY,mw,Math.max(5,Math.floor(r.h/24)),3,true,false);
+    ctx.fillStyle="#5082c8"; roundRect(soil.x,waterY,mw,Math.max(4,Math.floor(r.h/24)),3,true,false);
 
     if(p.has_seed){
       const st=SEED_TYPES[p.seed_type]; const base=[...st.color];
       const cx=r.x+Math.floor(r.w/2); const baseY=waterY;
       let height,color,blades;
-      if(p.stage===SEEDED){ height=Math.max(10,Math.floor(r.h/9)); color=tint(base,0.95); blades=2; }
-      else if(p.stage===SPROUT){ height=Math.max(22,Math.floor(r.h/4)); color=base; blades=5; }
-      else if(p.stage===GROWTH){ height=Math.max(38,Math.floor(r.h/2.7)); color=tint(base,0.95); blades=8; }
-      else if(p.stage===MATURE){ height=Math.max(56,Math.floor(r.h/2)); color=base; blades=9; }
-      else { height=Math.max(50,Math.floor(r.h/2.3)); color=tint(base,0.75); blades=9; }
-      const step=Math.max(4,Math.floor(r.w/18));
-      ctx.strokeStyle=rgb(color); ctx.lineWidth=Math.max(2,Math.floor(r.w/60));
+      if(p.stage===SEEDED){ height=Math.max(8,Math.floor(r.h/9)); color=tint(base,0.95); blades=2; }
+      else if(p.stage===SPROUT){ height=Math.max(16,Math.floor(r.h/4)); color=base; blades=5; }
+      else if(p.stage===GROWTH){ height=Math.max(26,Math.floor(r.h/2.7)); color=tint(base,0.95); blades=8; }
+      else if(p.stage===MATURE){ height=Math.max(34,Math.floor(r.h/2)); color=base; blades=9; }
+      else { height=Math.max(30,Math.floor(r.h/2.3)); color=tint(base,0.75); blades=9; }
+      const step=Math.max(3,Math.floor(r.w/18));
+      ctx.strokeStyle=rgb(color); ctx.lineWidth=Math.max(1,Math.floor(r.w/60));
       for(let k=0;k<blades;k++){
         const x=cx + (k-(blades/2|0))*step;
         const wob=Math.sin((performance.now()/270)+k)*2;
         ctx.beginPath(); ctx.moveTo(x,baseY); ctx.lineTo(x,baseY - height - ((k%3)*2) + wob); ctx.stroke();
       }
-      const badgeR=Math.max(10,Math.floor(r.w/10));
+      const badgeR=Math.max(7,Math.floor(r.w/10));
       if(p.stage===MATURE){
         ctx.fillStyle="#4eac60"; ctx.beginPath(); ctx.arc(r.x+r.w-badgeR, r.y+badgeR, badgeR, 0, Math.PI*2); ctx.fill();
       }else if(p.stage===OVERGROWN){
@@ -513,8 +515,9 @@ function loop(now){
 }
 
 /* =============== Input =============== */
-canvas.addEventListener("pointerdown",(e)=>{
-  const rect=canvas.getBoundingClientRect();
+const canvasEl = document.getElementById("game");
+canvasEl.addEventListener("pointerdown",(e)=>{
+  const rect=canvasEl.getBoundingClientRect();
   const mx=e.clientX-rect.left, my=e.clientY-rect.top;
   for(let i=0;i<12;i++){
     const r=potRects[i]; if(mx>=r.x&&mx<=r.x+r.w&&my>=r.y&&my<=r.y+r.h){
@@ -573,16 +576,13 @@ const xpFill=document.getElementById("xpFill");
 const xpText=document.getElementById("xpText");
 const toolSelect=document.getElementById('toolSelect');
 
-/* Tabs helper */
 function openTab(which){
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.tab===which));
   tabShop.style.display   = which==='shop'?'':'none';
   tabQuests.style.display = which==='quests'?'':'none';
   tabAch.style.display    = which==='ach'?'':'none';
 }
-document.querySelectorAll('.tab').forEach(el=>{
-  el.onclick=()=>openTab(el.dataset.tab);
-});
+document.querySelectorAll('.tab').forEach(el=>{ el.onclick=()=>openTab(el.dataset.tab); });
 
 function updateLevelBar(){
   lvlSpan.textContent = state.level;
@@ -600,12 +600,8 @@ function buildSeedChips(){
     chip.textContent=`${t.name} [${state.seed_stock[t.id]}]${!unlocked?' 🔒':''}`;
     chip.style.opacity = unlocked?1:0.5;
     chip.addEventListener("click",()=>{ 
-      if(unlocked){ 
-        activeSeedIdx=i; 
-        refreshSidebar(true,false,false); 
-      } else {
-        toast(`Откроется на уровне ${t.unlock}`);
-      }
+      if(unlocked){ activeSeedIdx=i; refreshSidebar(true,false,false); }
+      else toast(`Откроется на уровне ${t.unlock}`);
     });
     seedSel.appendChild(chip);
   });
@@ -649,7 +645,7 @@ function renderQuests(){
   }
   for(const q of state.weekly){
     const div=document.createElement("div"); div.className="q "+(q.claimed?"done":"");
-    div.innerHTML=`• ${q.name} — ${q.done}/${q.need} (+${q.reward}) ${q.claimed?"✓":""}`;
+    div.innerHTML=`• ${q.name} — ${q.done}/${q.need} (+${q.reward}) ${q.claimед?"✓":""}`;
     weeklyList.appendChild(div);
   }
   qdate.textContent=`Обновление: ${state.quests_date}`;
@@ -770,14 +766,15 @@ luClose.onclick=()=>{ levelup.style.display='none'; };
 luShop.onclick=()=>{ levelup.style.display='none'; openTab('shop'); };
 
 /* =============== Mobile tool select =============== */
-if(toolSelect){
-  toolSelect.addEventListener('change',(e)=>{
+const toolSelectEl=document.getElementById('toolSelect');
+if(toolSelectEl){
+  toolSelectEl.addEventListener('change',(e)=>{
     activeTool = Number(e.target.value)||TOOL_SEED;
     refreshSidebar(false,false,false);
   });
 }
 function syncToolUI(){
-  if(toolSelect) toolSelect.value = String(activeTool);
+  if(toolSelectEl) toolSelectEl.value = String(activeTool);
 }
 
 /* =============== Init / Resize hooks =============== */
