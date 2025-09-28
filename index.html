@@ -1,3 +1,6 @@
+Готово. Ниже — полный файл HTML+CSS+JS с исправлением:
+— пересобираю чипы видов семян при переключении стрелками и по клику (чтобы активный вид подсвечивался и числа обновлялись).
+
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -535,17 +538,19 @@ canvas.addEventListener("pointerdown",(e)=>{
   }
 });
 window.addEventListener("keydown",(e)=>{
+  let seedChanged=false;
   if(e.key==="1") activeTool=TOOL_SEED;
   else if(e.key==="2") activeTool=TOOL_WATER;
   else if(e.key==="3") activeTool=TOOL_HARVEST;
   else if(e.key==="4") activeTool=TOOL_FERT;
-  else if(e.key==="ArrowLeft" && activeTool===TOOL_SEED){ activeSeedIdx=(activeSeedIdx-1+SEED_TYPES.length)%SEED_TYPES.length; }
-  else if(e.key==="ArrowRight" && activeTool===TOOL_SEED){ activeSeedIdx=(activeSeedIdx+1)%SEED_TYPES.length; }
+  else if(e.key==="ArrowLeft" && activeTool===TOOL_SEED){ activeSeedIdx=(activeSeedIdx-1+SEED_TYPES.length)%SEED_TYPES.length; seedChanged=true; }
+  else if(e.key==="ArrowRight" && activeTool===TOOL_SEED){ activeSeedIdx=(activeSeedIdx+1)%SEED_TYPES.length; seedChanged=true; }
   else if(e.key.toLowerCase()==="s"){ if(state.settings.autosave) toast("Автосейв включён"); else saveState(); }
   else if(e.key.toLowerCase()==="l"){ if(loadState()) refreshSidebar(true,true,true); }
   else if(e.key.toLowerCase()==="r"){ resetGame(); refreshSidebar(true,true,true); openStart(false); }
   syncToolUI();
-  refreshSidebar(false,true,false);
+  // ключевая правка: если меняли вид семян — пересобираем чипы
+  refreshSidebar(seedChanged, true, false);
 });
 
 /* =============== Sidebar / UI =============== */
@@ -587,7 +592,15 @@ function buildSeedChips(){
     chip.className="chip"+(i===activeSeedIdx?" active":"");
     chip.textContent=`${t.name} [${state.seed_stock[t.id]}]${!unlocked?' 🔒':''}`;
     chip.style.opacity = unlocked?1:0.5;
-    chip.addEventListener("click",()=>{ if(unlocked){ activeSeedIdx=i; refreshSidebar(false,true,false); } else toast(`Откроется на уровне ${t.unlock}`); });
+    // ключевая правка: при клике пересобираем чипы
+    chip.addEventListener("click",()=>{ 
+      if(unlocked){ 
+        activeSeedIdx=i; 
+        refreshSidebar(true,false,false); 
+      } else {
+        toast(`Откроется на уровне ${t.unlock}`);
+      }
+    });
     seedSel.appendChild(chip);
   });
 }
