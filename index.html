@@ -3,13 +3,15 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Витграсс-ферма (HTML)</title>
+<title>Витграсс-ферма (HTML — complete, fixed)</title>
 <style>
   :root{
     --bg-top:#ebf6ef; --bg-bottom:#d6ebdd;
     --white:#fff; --grey:#d2d7d7; --black:#1e1e1e;
     --green:#4eac60; --orange:#e68c46; --mint:#bee6c8;
     --brown:#966e50; --darkbrown:#78543c; --blue:#5082c8;
+    --ink2:#6b7280; --line:#e5e9eb;
+    --tab:#f6faf7; --tabb:#cfe3d4; --pill:#edf7ef;
   }
   *{box-sizing:border-box}
   html,body{height:100%;margin:0;background:linear-gradient(180deg,var(--bg-top),var(--bg-bottom));color:var(--black);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
@@ -18,9 +20,13 @@
   #hint{font-size:12px;line-height:1.2;padding:6px 4px 2px 4px;opacity:.85}
   #gamewrap{position:relative;flex:1;min-height:220px;border-radius:16px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.06)}
   #game{width:100%;height:100%;display:block;background:transparent}
-  .right{width:min(420px,34vw);min-width:300px;max-width:520px;background:var(--white);border:2px solid var(--grey);border-radius:18px;padding:14px;overflow:hidden;display:flex;flex-direction:column}
+  .right{width:min(440px,34vw);min-width:300px;max-width:560px;background:var(--white);border:2px solid var(--grey);border-radius:18px;padding:14px;overflow:hidden;display:flex;flex-direction:column}
   #sidebar{overflow:auto;padding-right:8px}
   .title{display:flex;align-items:center;gap:10px;font-weight:700;font-size:22px;margin-bottom:8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;background:var(--pill);border:1px solid var(--tabb);border-radius:999px;padding:6px 10px;font-size:13px}
+  .tabs{display:flex;gap:6px;margin:6px 0 8px}
+  .tab{flex:1;background:var(--tab);border:1px solid var(--tabb);padding:8px 10px;border-radius:12px;cursor:pointer;text-align:center}
+  .tab.active{background:#dff0e4;border-color:#9fd1ab;font-weight:700}
   .chipbar{display:flex;flex-wrap:wrap;gap:8px;margin:.25rem 0 .5rem}
   .chip{font-size:13px;padding:6px 10px;border-radius:12px;background:var(--white);border:2px solid var(--grey);cursor:pointer;user-select:none}
   .chip.active{background:#b4e1be;border-color:#74b685}
@@ -32,103 +38,245 @@
   .q{font-size:13px;margin:2px 0}
   .q.done{color:var(--green);font-weight:600}
   .icon{width:22px;height:22px;display:inline-block;vertical-align:middle}
+  .bar{height:8px;background:#edf2f7;border-radius:6px;overflow:hidden;margin-top:4px}
+  .fill{height:100%;background:#b5e0bd;width:0%}
+  #overlay,#tutor{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.4);z-index:10}
+  .panel{background:#fff;border-radius:16px;border:1px solid var(--line);padding:18px;max-width:520px;width:min(92vw,520px);box-shadow:0 10px 30px rgba(0,0,0,.15)}
+  .panel h2{margin:0 0 12px}
+  .panel .btn{margin:6px 0}
+  .tip{background:#fff4d6;border:1px solid #f0d390;border-radius:12px;padding:10px;margin-top:8px;font-size:14px}
+  #toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:#111;color:#fff;border-radius:999px;padding:8px 14px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:20}
   @media (max-width:900px){ .right{width:38vw;min-width:260px}.title{font-size:20px} }
-  @media (max-width:700px){ #app{flex-direction:column}.right{width:100%;max-height:46vh} }
+  @media (max-width:700px){ #app{flex-direction:column}.right{width:100%;max-height:48vh} }
 </style>
 </head>
 <body>
 <div id="app">
   <div class="left">
-    <div id="hint">1: Семена • 2: Лейка • 3: Ножницы • 4: Удобрение | Магазин справа → (S/L — сейв/лоад, R — новая игра)</div>
+    <div id="hint">1: Семена • 2: Лейка • 3: Ножницы • 4: Удобрение | ←/→ — смена вида семян | S/L — сейв/лоад, R — новая игра</div>
     <div id="gamewrap"><canvas id="game"></canvas></div>
   </div>
   <aside class="right">
     <div id="sidebar">
       <div class="title"><span class="icon" id="icon-seed"></span><span>Витграсс Ферма</span></div>
-      <div id="stats"></div>
+
+      <div class="row pill" style="gap:12px">
+        <div>Уровень фермы: <b id="lvl">1</b></div>
+        <div style="flex:1">
+          <div class="bar"><div id="xpFill" class="fill"></div></div>
+          <div style="font-size:12px;color:var(--ink2)"><span id="xpText"></span> до следующего</div>
+        </div>
+      </div>
+
+      <div id="stats" style="margin-top:6px"></div>
+
       <div class="toolhdr"><span class="icon" id="tool-ico"></span><span id="tool-name"></span></div>
       <div id="seedSelector" class="chipbar" aria-label="Виды семян"></div>
-      <div id="shop"></div>
-      <div class="quests">
-        <h4 style="margin:.5rem 0 .25rem;font-size:16px">Ежедневные квесты</h4>
-        <div id="quests"></div>
+
+      <div class="tabs">
+        <div class="tab active" data-tab="shop">Магазин</div>
+        <div class="tab" data-tab="quests">Квесты</div>
+        <div class="tab" data-tab="ach">Достижения</div>
+      </div>
+
+      <div id="tab-shop"></div>
+      <div id="tab-quests" style="display:none">
+        <h4 style="margin:.5rem 0 .25rem;font-size:16px">Ежедневные</h4>
+        <div id="dailyList"></div>
         <div id="qdate" style="font-size:12px;color:#96a0a0;margin-top:4px"></div>
+        <h4 style="margin:.75rem 0 .25rem;font-size:16px">Еженедельные</h4>
+        <div id="weeklyList"></div>
+        <div id="wdate" style="font-size:12px;color:#96a0a0;margin-top:4px"></div>
+      </div>
+      <div id="tab-ach" style="display:none">
+        <div id="achList"></div>
       </div>
     </div>
   </aside>
 </div>
 
+<div id="overlay">
+  <div class="panel" id="startPanel">
+    <h2>Витграсс-ферма</h2>
+    <div class="tip">Уютная ферма: сажай, поливай, жди рост, срезай, делай сок и улучшай ферму.</div>
+    <button class="btn" id="btnContinue">Продолжить</button>
+    <button class="btn" id="btnNew">Новая игра</button>
+    <button class="btn" id="btnTutor">Обучение (60 сек.)</button>
+    <hr style="border:0;border-top:1px solid var(--line);margin:10px 0">
+    <div style="display:flex;gap:8px;align-items:center">
+      <label class="pill"><input type="checkbox" id="mute" style="margin-right:8px">Тихий режим</label>
+      <label class="pill"><input type="checkbox" id="autosave" style="margin-right:8px" checked>Автосейв</label>
+    </div>
+  </div>
+</div>
+
+<div id="tutor">
+  <div class="panel" id="tutorPanel">
+    <h2 id="tTitle">Обучение</h2>
+    <div id="tText" style="font-size:15px"></div>
+    <button class="btn" id="tNext">Далее</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
 <script>
-/* ---------- constants ---------- */
+/* =============== Icons =============== */
+function svg(path){
+  const s=document.createElement("span");
+  s.className="icon";
+  s.innerHTML=`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">${path}</svg>`;
+  return s;
+}
+const ICONS={
+  seed:svg(`<path d="M12 22V7"/><ellipse cx="14" cy="6" rx="3" ry="2"/><ellipse cx="9" cy="8" rx="2.2" ry="1.4"/>`),
+  water:svg(`<path d="M12 3 L17 13 L12 21 L7 13 Z"/>`),
+  scissors:svg(`<circle cx="9" cy="15" r="2.5"/><circle cx="15" cy="15" r="2.5"/><path d="M10 13 L16.5 6"/><path d="M14 13 L7.5 6"/>`),
+  fert:svg(`<rect x="8" y="6" width="8" height="12" rx="2"/><path d="M12 4 L14 6"/>`),
+  lamp:svg(`<circle cx="12" cy="9" r="4.5"/><rect x="10" y="14" width="4" height="4" rx="1"/>`),
+  coin:svg(`<ellipse cx="12" cy="14" rx="6" ry="3.6"/>`),
+  juice:svg(`<rect x="9" y="5" width="6" height="12" rx="1.5"/><path d="M15 5 L18 3"/>`),
+  save:svg(`<rect x="6" y="6" width="12" height="12" rx="2"/><rect x="8.5" y="8" width="7" height="4" rx="1"/>`),
+  reset:svg(`<path d="M7 7 A7 7 0 1 0 17 12"/><path d="M17 6 L17 11 L12 11"/>`),
+};
+document.getElementById("icon-seed").replaceWith(ICONS.seed.cloneNode(true));
+
+/* =============== Consts =============== */
 const JUICE_PRICE=6, LAMP_PRICE=40, LAMP_GROWTH_BONUS=0.10;
 const AUTOWATER_PRICE=120, AUTOWATER_TICK=5.0, AUTOWATER_AMOUNT=0.18;
 const TOOL_SEED=1, TOOL_WATER=2, TOOL_HARVEST=3, TOOL_FERT=4;
 const SEEDED=0, SPROUT=1, GROWTH=2, MATURE=3, OVERGROWN=4;
 const STAGE_TIMERS={0:15,1:25,2:35,3:45,4:Infinity};
 const SEED_TYPES=[
-  {id:"basic",name:"Обычные",pack:5,price:10,speed:1.00,ym:2,yo:1,color:[70,170,80]},
-  {id:"fast",name:"Скороспелые",pack:5,price:14,speed:1.35,ym:1,yo:1,color:[90,190,120]},
-  {id:"juicy",name:"Сочные",pack:5,price:18,speed:0.95,ym:3,yo:1,color:[60,160,90]},
-  {id:"premium",name:"Премиум",pack:3,price:22,speed:0.85,ym:4,yo:2,color:[56,150,86]},
+  {id:"basic",name:"Обычные",pack:5,price:10,speed:1.00,ym:2,yo:1,color:[70,170,80], unlock:1},
+  {id:"fast",name:"Скороспелые",pack:5,price:14,speed:1.35,ym:1,yo:1,color:[90,190,120], unlock:2},
+  {id:"juicy",name:"Сочные",pack:5,price:18,speed:0.95,ym:3,yo:1,color:[60,160,90], unlock:4},
+  {id:"premium",name:"Премиум",pack:3,price:22,speed:0.85,ym:4,yo:2,color:[56,150,86], unlock:6},
 ];
 
-/* ---------- state & save ---------- */
-const SAVE_KEY="vitgrass_save_v3";
+/* =============== Save/State =============== */
+const SAVE_KEY="vitgrass_save_v4";
 function defaultState(){
   const stock=Object.fromEntries(SEED_TYPES.map(t=>[t.id,0])); stock.basic=6;
   return {
     coins:30, seed_stock:stock, grass:0, juice:0, lamps:0, autowater:false, fert:0,
-    stats:{harvests:0,sell_juice:0,waters:0,plants:0},
-    quests:[], quests_date:"",
+    stats:{harvests:0,sell_juice:0,waters:0,plants:0,play_seconds:0},
+    level:1, xp:0, settings:{muted:false, autosave:true},
+    quests:[], quests_date:"", weekly:[], weekly_key:"",
+    achievements:{},
     pots:Array.from({length:12},()=>({has_seed:false,stage:SEEDED,stage_time:0,moisture:0,fert_time_left:0,seed_type:0,cut_flash:0}))
   };
 }
 let state=defaultState();
 
 function todayKey(){ return new Date().toISOString().slice(0,10); }
-function seededRandom(seed){ let x=seed|0; if(x===0)x=123456789; return ()=>{ x^=x<<13; x^=x>>>17; x^=x<<5; return ((x>>>0)%1e9)/1e9; }; }
-const QUEST_TEMPLATES=[["Собери витграсс",10,"harvests",40],["Продай стаканы сока",6,"sell_juice",36],["Полей горшки",18,"waters",20],["Посади семена",12,"plants",24]];
-function genDaily(){ const d=todayKey().replaceAll("-",""); const rnd=seededRandom(parseInt(d,10)||20250101); const pool=[...QUEST_TEMPLATES]; const pick=[]; while(pick.length<3&&pool.length){ pick.push(pool.splice(Math.floor(rnd()*pool.length),1)[0]); } return pick.map(([n,need,k,rw])=>({name:n,need,key:k,done:0,reward:rw,claimed:false})); }
-function ensureDaily(s){ if(s.quests_date!==todayKey()){ s.quests=genDaily(); s.quests_date=todayKey(); } }
-function questEvent(s,kind){ for(const q of s.quests){ if(q.key===kind && !q.claimed){ q.done=Math.min(q.need,q.done+1); if(q.done>=q.need){ q.claimed=true; s.coins+=q.reward; SFX.buy(); } } } }
-
-function saveState(){ try{ localStorage.setItem(SAVE_KEY,JSON.stringify(state)); document.title="Сохранено ✓ — Витграсс-ферма"; setTimeout(()=>document.title="Витграсс-ферма (HTML)",900); }catch(e){ console.warn("Save error",e); } }
-function loadState(){
-  try{
-    const raw=localStorage.getItem(SAVE_KEY); if(!raw) return false;
-    const data=JSON.parse(raw);
-    for(const t of SEED_TYPES){ if(!(t.id in data.seed_stock)) data.seed_stock[t.id]=0; }
-    if(!Array.isArray(data.pots)||data.pots.length!==12) data.pots=defaultState().pots;
-    state={...defaultState(),...data}; ensureDaily(state);
-    document.title="Загружено ✓ — Витграсс-ферма"; setTimeout(()=>document.title="Витграсс-ферма (HTML)",900);
-    return true;
-  }catch(e){ console.warn("Load error",e); return false; }
+function weekKey(){
+  const d=new Date();
+  const tmp=new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const day=(tmp.getUTCDay()||7); tmp.setUTCDate(tmp.getUTCDate()+4-day);
+  const yearStart=new Date(Date.UTC(tmp.getUTCFullYear(),0,1));
+  const week=Math.ceil((((tmp-yearStart)/86400000)+1)/7);
+  return `${tmp.getUTCFullYear()}-W${String(week).padStart(2,'0')}`;
 }
-function resetGame(){ state=defaultState(); ensureDaily(state); try{localStorage.removeItem(SAVE_KEY);}catch{}; document.title="Новая игра — прогресс сброшен"; setTimeout(()=>document.title="Витграсс-ферма (HTML)",900); }
+function seededRandom(seed){ let x=seed|0; if(x===0)x=123456789; return ()=>{ x^=x<<13; x^=x>>>17; x^=x<<5; return ((x>>>0)%1e9)/1e9; }; }
 
-/* ---------- audio ---------- */
-let audioCtx=null; function ensureAudio(){ if(!audioCtx){ audioCtx=new (window.AudioContext||window.webkitAudioContext)(); } }
-function beep(freq=880,sec=.12,vol=.35){ ensureAudio(); const t0=audioCtx.currentTime; const osc=audioCtx.createOscillator(); const g=audioCtx.createGain(); osc.type="sine"; osc.frequency.value=freq; g.gain.setValueAtTime(0,t0); g.gain.linearRampToValueAtTime(vol,t0+.01); g.gain.exponentialRampToValueAtTime(0.0001,t0+sec); osc.connect(g).connect(audioCtx.destination); osc.start(t0); osc.stop(t0+sec+.02); }
+const QUEST_POOL_DAILY=[["Посади семена",12,"plants",24],["Собери витграсс",10,"harvests",40],["Продай сок",6,"sell_juice",36],["Полей горшки",16,"waters",22]];
+const QUEST_POOL_WEEK=[["Собери стаканы сока",40,"sell_juice",140],["Собери урожаи",50,"harvests",120],["Полей горшки",100,"waters",80]];
+function genQuests(pool,seed,count){
+  const rnd=seededRandom(seed), src=[...pool], pick=[];
+  while(pick.length<count&&src.length){ pick.push(src.splice(Math.floor(rnd()*src.length),1)[0]); }
+  return pick.map(([n,need,k,rw])=>({name:n,need,key:k,done:0,reward:rw,claimed:false}));
+}
+function ensureDaily(s){ if(s.quests_date!==todayKey()){ s.quests=genQuests(QUEST_POOL_DAILY, parseInt(todayKey().replaceAll('-',''),10)||20250101, 3); s.quests_date=todayKey(); } }
+function ensureWeekly(s){ const wk=weekKey(); if(s.weekly_key!==wk){ s.weekly=genQuests(QUEST_POOL_WEEK, parseInt(wk.replace('W',''),10)||202501, 2); s.weekly_key=wk; } }
+
+function questEvent(s,kind){
+  let changed=false;
+  for(const q of s.quests){ if(q.key===kind && !q.claimed){ q.done=Math.min(q.need,q.done+1); if(q.done>=q.need && !q.claimed){ toast(`Дейлик готов! +${q.reward} мон.`); q.claimed=true; s.coins+=q.reward; changed=true; } } }
+  for(const q of s.weekly){ if(q.key===kind && !q.claimed){ q.done=Math.min(q.need,q.done+1); if(q.done>=q.need && !q.claimed){ toast(`Еженедельный готов! +${q.reward} мон.`); q.claimed=true; s.coins+=q.reward; changed=true; } } }
+  if(changed) refreshSidebar(false,true,true);
+}
+
+/* =============== Achievements =============== */
+const ACH_POOL=[
+  {id:'first_seed', name:'Первый посев', desc:'Посади 1 семечко', key:'plants', target:1, reward:10},
+  {id:'first_harv', name:'Первый урожай', desc:'Собери 1 урожай', key:'harvests', target:1, reward:12},
+  {id:'juicer',     name:'Соковыжималка', desc:'Продай 10 стаканов сока', key:'sell_juice', target:10, reward:40},
+  {id:'watering',   name:'Гидратор', desc:'Полей 50 раз', key:'waters', target:50, reward:60},
+  {id:'farmer10',   name:'Фермер-десять', desc:'Собери 10 урожаев', key:'harvests', target:10, reward:50},
+  {id:'wealth',     name:'Первый капитал', desc:'Накопи 200 монет', key:'coins', target:200, reward:50, type:'value'},
+  {id:'lamps3',     name:'Свет по расписанию', desc:'Купи 3 лампы', key:'lamps', target:3, reward:70, type:'value'},
+  {id:'level4',     name:'4 уровень', desc:'Достигни 4 уровня фермы', key:'level', target:4, reward:80, type:'value'},
+  {id:'level6',     name:'6 уровень', desc:'Достигни 6 уровня фермы', key:'level', target:6, reward:120, type:'value'},
+  {id:'rich',       name:'Богатый травник', desc:'Накопи 600 монет', key:'coins', target:600, reward:120, type:'value'},
+];
+function achEvent(){
+  let changed=false;
+  for(const a of ACH_POOL){
+    const st=state.achievements[a.id]||{progress:0,done:false,claimed:false};
+    if(st.done && st.claimed) continue;
+    const val = a.type==='value'
+      ? (a.key==='coins'?state.coins:(a.key==='lamps'?state.lamps:(a.key==='level'?state.level:0)))
+      : (state.stats[a.key]||0);
+    st.progress=Math.max(st.progress,val);
+    if(!st.done && st.progress>=a.target){
+      st.done=true;
+      if(!st.claimed){ state.coins+=a.reward; toast(`Достижение: «${a.name}»  +${a.reward} мон.`); }
+      st.claimed=true;
+      changed=true;
+    }
+    state.achievements[a.id]=st;
+  }
+  if(changed) refreshSidebar(false,false,true);
+}
+
+/* =============== Level / XP =============== */
+function addXP(amount){
+  state.xp += amount;
+  const req = levelReq(state.level);
+  while(state.xp>=req){
+    state.xp -= req;
+    state.level += 1;
+    toast(`Новый уровень: ${state.level}! Открытия в магазине.`);
+  }
+  achEvent();
+  updateLevelBar();
+}
+function levelReq(level){ return 30 + (level-1)*20; }
+
+/* =============== Audio =============== */
+let audioCtx=null;
+function ensureAudio(){
+  if(!audioCtx && !state.settings.muted){
+    try{ audioCtx=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ console.warn("Audio not supported",e); }
+  }
+}
+function beep(freq=880,sec=.12,vol=.35){
+  if(state.settings.muted || !audioCtx) return;
+  const t0=audioCtx.currentTime;
+  const osc=audioCtx.createOscillator(); const g=audioCtx.createGain();
+  osc.type="sine"; osc.frequency.value=freq;
+  g.gain.setValueAtTime(0,t0); g.gain.linearRampToValueAtTime(vol,t0+.01); g.gain.exponentialRampToValueAtTime(0.0001,t0+sec);
+  osc.connect(g).connect(audioCtx.destination); osc.start(t0); osc.stop(t0+sec+.02);
+}
 const SFX={ plant:()=>beep(660,.09,.28), water:()=>beep(520,.11,.25), harv:()=>beep(920,.12,.32), buy:()=>beep(480,.09,.25), err:()=>beep(220,.16,.28) };
 
-/* ---------- canvas/layout ---------- */
+/* =============== Canvas / Layout =============== */
 const canvas=document.getElementById("game"); const wrap=document.getElementById("gamewrap"); const ctx=canvas.getContext("2d");
-let DPR = (window.devicePixelRatio||1);
+let DPR=(window.devicePixelRatio||1);
 let layout={w:1200,h:720,margin:16,cols:3,rows:4,potW:120,potH:120,gapX:18,gapY:22,offsetX:0,offsetY:0,gridLeft:0,gridTop:0,gridW:0,gridH:0};
 let potRects=Array.from({length:12},()=>({x:0,y:0,w:0,h:0}));
 let cachedLeaf=null;
 
 function resizeCanvas(){
-  try{
-    DPR=(window.devicePixelRatio||1);
-    const w=wrap.clientWidth||800, h=wrap.clientHeight||500;
-    canvas.width = Math.max(1, Math.floor(w*DPR));
-    canvas.height= Math.max(1, Math.floor(h*DPR));
-    canvas.style.width=w+"px"; canvas.style.height=h+"px";
-    ctx.setTransform(DPR,0,0,DPR,0,0);
-    rebuildLayout(w,h);
-    if(!cachedLeaf) cachedLeaf=makeLeaf(Math.max(18,Math.floor(Math.min(w,h)*0.02)));
-  }catch(e){ console.error("resizeCanvas error",e); }
+  DPR=(window.devicePixelRatio||1);
+  const w=wrap.clientWidth||800, h=wrap.clientHeight||500;
+  canvas.width=Math.max(1,Math.floor(w*DPR));
+  canvas.height=Math.max(1,Math.floor(h*DPR));
+  canvas.style.width=w+"px"; canvas.style.height=h+"px";
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  rebuildLayout(w,h);
+  if(!cachedLeaf) cachedLeaf=makeLeaf(Math.max(18,Math.floor(Math.min(w,h)*0.02)));
 }
 function rebuildLayout(w,h){
   layout.w=w; layout.h=h;
@@ -152,7 +300,7 @@ function rebuildLayout(w,h){
     gapX=Math.max(8,Math.floor(layout.gridW*0.015));
     gapY=Math.max(10,Math.floor(layout.gridH*0.025));
     size=Math.max(60,Math.min(Math.floor((layout.gridW-gapX*(cols-1))/cols),Math.floor((layout.gridH-gapY*(rows-1))/rows)));
-  }else ({size,cols,rows,gapX,gapY}=best);
+  } else ({size,cols,rows,gapX,gapY}=best);
   layout.cols=cols; layout.rows=rows; layout.potW=layout.potH=size; layout.gapX=gapX; layout.gapY=gapY;
   const totalW=size*cols+gapX*(cols-1), totalH=size*rows+gapY*(rows-1);
   layout.offsetX=layout.gridLeft+Math.max(0,Math.floor((layout.gridW-totalW)/2));
@@ -198,7 +346,6 @@ function roundRect(x,y,w,h,r,fill,stroke){
 }
 function rgb([r,g,b]){ return `rgb(${r},${g},${b})`; }
 function tint([r,g,b],k){ return [Math.floor(r*k),Math.floor(g*k),Math.floor(b*k)]; }
-
 function drawShelves(){
   const shelfH=Math.max(10,Math.floor(layout.potH/14));
   const under =Math.max(6, Math.floor(layout.potH/18));
@@ -239,11 +386,8 @@ function drawPots(){
       const badgeR=Math.max(10,Math.floor(r.w/10));
       if(p.stage===MATURE){
         ctx.fillStyle="#4eac60"; ctx.beginPath(); ctx.arc(r.x+r.w-badgeR, r.y+badgeR, badgeR, 0, Math.PI*2); ctx.fill();
-        ctx.strokeStyle="#fff"; ctx.lineWidth=Math.max(2,badgeR*.12); ctx.beginPath(); ctx.moveTo(r.x+r.w-badgeR*1.35, r.y+badgeR); ctx.lineTo(r.x+r.w-badgeR*1.05, r.y+badgeR*1.28); ctx.lineTo(r.x+r.w-badgeR*.64, r.y+badgeR*.66); ctx.stroke();
       }else if(p.stage===OVERGROWN){
         ctx.fillStyle="#e68c46"; ctx.beginPath(); ctx.arc(r.x+r.w-badgeR, r.y+badgeR, badgeR, 0, Math.PI*2); ctx.fill();
-        ctx.fillStyle="#fff"; ctx.fillRect(r.x+r.w-badgeR*0.08 - badgeR*0.08, r.y+badgeR*0.08 - badgeR*0.5, badgeR*0.16, badgeR*0.5);
-        ctx.beginPath(); ctx.arc(r.x+r.w-badgeR*0.0, r.y+badgeR*0.9, badgeR*0.09, 0, Math.PI*2); ctx.fill();
       }
     }
     if(p.cut_flash>0){ ctx.globalAlpha=Math.min(1,(p.cut_flash/0.18)*0.6); ctx.fillStyle="#fff"; ctx.fillRect(r.x,r.y,r.w,r.h); ctx.globalAlpha=1; }
@@ -251,13 +395,14 @@ function drawPots(){
   }
 }
 
-/* ---------- game loop ---------- */
-let activeTool=TOOL_SEED, activeSeedIdx=0, autowaterTimer=0;
-function sumSeeds(stock){ return SEED_TYPES.reduce((a,t)=>a+(stock[t.id]||0),0); }
+/* =============== Game loop =============== */
+let activeTool=TOOL_SEED, activeSeedIdx=0, awAcc=0;
 function potSpeed(p){ const st=SEED_TYPES[p.seed_type]; return st.speed * (1+state.lamps*LAMP_GROWTH_BONUS) * (1+p.moisture) * (p.fert_time_left>0?1.35:1); }
 function update(dt){
-  ensureDaily(state);
-  if(state.autowater){ autowaterTimer+=dt; if(autowaterTimer>=AUTOWATER_TICK){ autowaterTimer=0; for(const p of state.pots) if(p.has_seed) p.moisture=Math.min(1,p.moisture+AUTOWATER_AMOUNT); } }
+  ensureDaily(state); ensureWeekly(state);
+  state.stats.play_seconds += dt;
+
+  if(state.autowater){ awAcc+=dt; if(awAcc>=AUTOWATER_TICK){ awAcc=0; for(const p of state.pots) if(p.has_seed) p.moisture=Math.min(1,p.moisture+AUTOWATER_AMOUNT); } }
   for(const p of state.pots){
     p.moisture=Math.max(0,p.moisture - dt*0.02);
     if(p.fert_time_left>0) p.fert_time_left=Math.max(0,p.fert_time_left-dt);
@@ -265,7 +410,7 @@ function update(dt){
     if(!p.has_seed) continue;
     p.stage_time+=dt*potSpeed(p);
     const target=STAGE_TIMERS[p.stage];
-    if(p.stage===SEEDED||p.stage===SPROUT||p.stage===GROWTH){ if(p.stage_time>=target){ p.stage+=1; p.stage_time=0; } }
+    if(p.stage<=GROWTH){ if(p.stage_time>=target){ p.stage+=1; p.stage_time=0; } }
     else if(p.stage===MATURE && p.stage_time>=target){ p.stage=OVERGROWN; p.stage_time=0; }
   }
 }
@@ -273,15 +418,12 @@ let last=performance.now();
 function loop(now){
   const dt=Math.min(.1,(now-last)/1000); last=now;
   update(dt);
-  drawBG();
-  drawShelves();
-  drawPots();
+  drawBG(); drawShelves(); drawPots();
   requestAnimationFrame(loop);
 }
 
-/* ---------- input ---------- */
+/* =============== Input =============== */
 canvas.addEventListener("pointerdown",(e)=>{
-  ensureAudio();
   const rect=canvas.getBoundingClientRect();
   const mx=e.clientX-rect.left, my=e.clientY-rect.top;
   for(let i=0;i<12;i++){
@@ -289,24 +431,26 @@ canvas.addEventListener("pointerdown",(e)=>{
       const p=state.pots[i];
       if(activeTool===TOOL_SEED){
         const sid=SEED_TYPES[activeSeedIdx].id;
-        if(!p.has_seed && state.seed_stock[sid]>0){
+        if(!p.has_seed && state.seed_stock[sid]>0 && state.level>=SEED_TYPES[activeSeedIdx].unlock){
           p.has_seed=true; p.seed_type=activeSeedIdx; p.stage=SEEDED; p.stage_time=0; p.moisture=.4; p.cut_flash=0;
-          state.seed_stock[sid]--; state.stats.plants=(state.stats.plants||0)+1; questEvent(state,"plants"); SFX.plant();
-          refreshSidebar(false);
+          state.seed_stock[sid]--; state.stats.plants=(state.stats.plants||0)+1; questEvent(state,"plants"); addXP(2); SFX.plant();
+          tutorAdvance('seed');
+          refreshSidebar(false,true,false);
         }else SFX.err();
       }else if(activeTool===TOOL_WATER){
-        if(p.has_seed){ p.moisture=Math.min(1,p.moisture+.6); state.stats.waters=(state.stats.waters||0)+1; questEvent(state,"waters"); SFX.water(); }
+        if(p.has_seed){ p.moisture=Math.min(1,p.moisture+.6); state.stats.waters=(state.stats.waters||0)+1; questEvent(state,"waters"); addXP(1); SFX.water(); tutorAdvance('water'); }
         else SFX.err();
       }else if(activeTool===TOOL_HARVEST){
         if(p.stage===MATURE || p.stage===OVERGROWN){
           const st=SEED_TYPES[p.seed_type]; const got=(p.stage===MATURE?st.ym:st.yo)|0;
           p.has_seed=false; p.stage=SEEDED; p.stage_time=0; p.moisture=0; p.fert_time_left=0; p.cut_flash=.18;
-          if(got>0){ state.grass+=got; state.stats.harvests=(state.stats.harvests||0)+1; questEvent(state,"harvests"); SFX.harv(); refreshSidebar(false); }
+          if(got>0){ state.grass+=got; state.stats.harvests=(state.stats.harvests||0)+1; questEvent(state,"harvests"); addXP(4); SFX.harv(); tutorAdvance('cut'); refreshSidebar(false,true,false); }
         }else SFX.err();
       }else if(activeTool===TOOL_FERT){
-        if(p.has_seed && state.fert>0){ p.fert_time_left+=120; state.fert--; SFX.buy(); refreshSidebar(false); }
+        if(p.has_seed && state.fert>0){ p.fert_time_left+=120; state.fert--; SFX.buy(); refreshSidebar(false,true,false); }
         else SFX.err();
       }
+      achEvent();
       break;
     }
   }
@@ -318,37 +462,108 @@ window.addEventListener("keydown",(e)=>{
   else if(e.key==="4") activeTool=TOOL_FERT;
   else if(e.key==="ArrowLeft" && activeTool===TOOL_SEED){ activeSeedIdx=(activeSeedIdx-1+SEED_TYPES.length)%SEED_TYPES.length; }
   else if(e.key==="ArrowRight" && activeTool===TOOL_SEED){ activeSeedIdx=(activeSeedIdx+1)%SEED_TYPES.length; }
-  else if(e.key.toLowerCase()==="s"){ saveState(); }
-  else if(e.key.toLowerCase()==="l"){ if(loadState()) refreshSidebar(true); }
-  else if(e.key.toLowerCase()==="r"){ resetGame(); refreshSidebar(true); }
-  else if(e.key==="Escape"){ saveState(); }
-  refreshSidebar(false);
+  else if(e.key.toLowerCase()==="s"){ if(state.settings.autosave) toast("Автосейв включён"); else saveState(); }
+  else if(e.key.toLowerCase()==="l"){ if(loadState()) refreshSidebar(true,true,true); }
+  else if(e.key.toLowerCase()==="r"){ resetGame(); refreshSidebar(true,true,true); openStart(false); }
+  refreshSidebar(false,true,false);
 });
 
-/* ---------- sidebar ---------- */
+/* =============== Sidebar / UI =============== */
 const statsDiv=document.getElementById("stats");
-const toolIco=document.getElementById("tool-ico");
+const toolIcoP=document.getElementById("tool-ico");
 const toolName=document.getElementById("tool-name");
 const seedSel=document.getElementById("seedSelector");
-const shopDiv=document.getElementById("shop");
-const questsDiv=document.getElementById("quests");
-const qdateDiv=document.getElementById("qdate");
-
-function svg(path){ const s=document.createElement("span"); s.className="icon"; s.innerHTML=`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">${path}</svg>`; return s; }
-const ICONS={
-  seed:svg(`<path d="M12 22V7"/><ellipse cx="14" cy="6" rx="3" ry="2"/><ellipse cx="9" cy="8" rx="2.2" ry="1.4"/>`),
-  water:svg(`<path d="M12 3 L17 13 L12 21 L7 13 Z"/>`),
-  scissors:svg(`<circle cx="9" cy="15" r="2.5"/><circle cx="15" cy="15" r="2.5"/><path d="M10 13 L16.5 6"/><path d="M14 13 L7.5 6"/>`),
-  fert:svg(`<rect x="8" y="6" width="8" height="12" rx="2"/><path d="M12 4 L14 6"/>`),
-  lamp:svg(`<circle cx="12" cy="9" r="4.5"/><rect x="10" y="14" width="4" height="4" rx="1"/>`),
-  coin:svg(`<ellipse cx="12" cy="14" rx="6" ry="3.6"/>`),
-  juice:svg(`<rect x="9" y="5" width="6" height="12" rx="1.5"/><path d="M15 5 L18 3"/>`),
-  save:svg(`<rect x="6" y="6" width="12" height="12" rx="2"/><rect x="8.5" y="8" width="7" height="4" rx="1"/>`),
-  reset:svg(`<path d="M7 7 A7 7 0 1 0 17 12"/><path d="M17 6 L17 11 L12 11"/>`),
-};
-document.getElementById("icon-seed").replaceWith(ICONS.seed.cloneNode(true));
-
-function refreshSidebar(rebuildChips=true){
+const tabShop=document.getElementById("tab-shop");
+const tabQuests=document.getElementById("tab-quests");
+const tabAch=document.getElementById("tab-ach");
+const lvlSpan=document.getElementById("lvl");
+const xpFill=document.getElementById("xpFill");
+const xpText=document.getElementById("xpText");
+document.querySelectorAll('.tab').forEach(el=>{
+  el.onclick=()=>{
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    el.classList.add('active');
+    const id=el.dataset.tab;
+    tabShop.style.display = id==='shop'?'':'none';
+    tabQuests.style.display = id==='quests'?'':'none';
+    tabAch.style.display = id==='ach'?'':'none';
+  };
+});
+function updateLevelBar(){
+  lvlSpan.textContent = state.level;
+  const need = levelReq(state.level);
+  xpFill.style.width = `${Math.min(99, (state.xp/need)*100)}%`;
+  xpText.textContent = `${(need-state.xp)|0} XP`;
+}
+function sumSeeds(stock){ return SEED_TYPES.reduce((a,t)=>a+(stock[t.id]||0),0); }
+function buildSeedChips(){
+  seedSel.innerHTML="";
+  SEED_TYPES.forEach((t,i)=>{
+    const unlocked = state.level>=t.unlock;
+    const chip=document.createElement("div");
+    chip.className="chip"+(i===activeSeedIdx?" active":"");
+    chip.textContent=`${t.name} [${state.seed_stock[t.id]}]${!unlocked?' 🔒':''}`;
+    chip.style.opacity = unlocked?1:0.5;
+    chip.addEventListener("click",()=>{ if(unlocked){ activeSeedIdx=i; refreshSidebar(false,true,false); } else toast(`Откроется на уровне ${t.unlock}`); });
+    seedSel.appendChild(chip);
+  });
+}
+function buildShop(){
+  tabShop.innerHTML="";
+  function button(label,icon,fn,disabled=false,hint=""){
+    const b=document.createElement("button"); b.className="btn";
+    if(disabled){ b.style.opacity=.6; b.style.pointerEvents='none'; }
+    b.appendChild(ICONS[icon].cloneNode(true)); b.append(" "+label);
+    if(hint){ const s=document.createElement("div"); s.style.fontSize='12px'; s.style.color='var(--ink2)'; s.textContent=hint; b.appendChild(s); }
+    b.onclick=fn; tabShop.appendChild(b);
+  }
+  for(const t of SEED_TYPES){
+    const locked = state.level<t.unlock;
+    button(`Купить семена: ${t.name} (+${t.pack}) — ${t.price}`, "seed",
+      ()=>{ if(state.coins>=t.price){ state.coins-=t.price; state.seed_stock[t.id]+=t.pack; SFX.buy(); refreshSidebar(false,true,false);} else SFX.err(); },
+      locked, locked?`Откроется на уровне ${t.unlock}`:"");
+  }
+  button(`Сделать сок (−1 трава, +1)`,"juice",()=>{ if(state.grass>=1){ state.grass--; state.juice++; SFX.buy(); refreshSidebar(false,true,false);} else SFX.err(); });
+  button(`Продать сок (+${JUICE_PRICE} мон.)`,"coin",()=>{
+    if(state.juice>=1){ state.juice--; state.coins+=JUICE_PRICE; state.stats.sell_juice=(state.stats.sell_juice||0)+1; questEvent(state,"sell_juice"); addXP(2); SFX.buy(); tutorAdvance('sell'); refreshSidebar(false,true,false); }
+    else SFX.err();
+  });
+  button(`Купить лампу (+10%) — ${LAMP_PRICE}`,"lamp",()=>{ if(state.coins>=LAMP_PRICE){ state.coins-=LAMP_PRICE; state.lamps++; SFX.buy(); achEvent(); refreshSidebar(false,true,false);} else SFX.err(); });
+  button(`Купить удобрение (+1) — 12`,"fert",()=>{ if(state.coins>=12){ state.coins-=12; state.fert++; SFX.buy(); refreshSidebar(false,true,false);} else SFX.err(); });
+  button(`Автополив — ${state.autowater?"УЖЕ ЕСТЬ":"120 мон."}`,"water",()=>{ if(state.autowater) SFX.err(); else if(state.coins>=AUTOWATER_PRICE){ state.coins-=AUTOWATER_PRICE; state.autowater=true; SFX.buy(); refreshSidebar(false,true,false);} else SFX.err(); });
+  button(`Сохранить (S) / Загрузить (L)`,"save",()=>{ if(state.settings.autosave){ toast('Автосейв включён'); } else { saveState(); toast('Сохранено'); } });
+  button(`Новая игра (R)`,"reset",()=>{ resetGame(); refreshSidebar(true,true,true); openStart(false); });
+}
+function renderQuests(){
+  const dailyList=document.getElementById("dailyList");
+  const weeklyList=document.getElementById("weeklyList");
+  const qdate=document.getElementById("qdate");
+  const wdate=document.getElementById("wdate");
+  dailyList.innerHTML=""; weeklyList.innerHTML="";
+  for(const q of state.quests){
+    const div=document.createElement("div"); div.className="q "+(q.claimed?"done":"");
+    div.innerHTML=`• ${q.name} — ${q.done}/${q.need} (+${q.reward}) ${q.claimed?"✓":""}`;
+    dailyList.appendChild(div);
+  }
+  for(const q of state.weekly){
+    const div=document.createElement("div"); div.className="q "+(q.claimed?"done":"");
+    div.innerHTML=`• ${q.name} — ${q.done}/${q.need} (+${q.reward}) ${q.claimed?"✓":""}`;
+    weeklyList.appendChild(div);
+  }
+  qdate.textContent=`Обновление: ${state.quests_date}`;
+  wdate.textContent=`Неделя: ${state.weekly_key}`;
+}
+function renderAch(){
+  const box=document.getElementById("achList"); box.innerHTML="";
+  for(const a of ACH_POOL){
+    const st=state.achievements[a.id]||{progress:0,done:false,claimed:false};
+    const div=document.createElement("div"); div.className="q "+(st.claimed?"done":"");
+    const prog = Math.min(a.target, st.progress|0);
+    div.innerHTML = `• ${a.name} — ${prog}/${a.target} ${st.claimed?"✓":""}<div style="font-size:12px;color:var(--ink2)">${a.desc} • Награда: +${a.reward}</div>`;
+    box.appendChild(div);
+  }
+}
+function refreshSidebar(doChips=true, doLists=true, doAch=false){
   const totalSeeds=sumSeeds(state.seed_stock);
   statsDiv.innerHTML = `
     <div class="row kv">${ICONS.coin.outerHTML}<div>Монеты: <b>${state.coins}</b></div></div>
@@ -362,61 +577,73 @@ function refreshSidebar(rebuildChips=true){
   `;
   const toolNames={[TOOL_SEED]:"Семена (1)",[TOOL_WATER]:"Лейка (2)",[TOOL_HARVEST]:"Ножницы (3)",[TOOL_FERT]:"Удобрение (4)"};
   const toolIcons={[TOOL_SEED]:"seed",[TOOL_WATER]:"water",[TOOL_HARVEST]:"scissors",[TOOL_FERT]:"fert"};
-  const ico=ICONS[toolIcons[activeTool]].cloneNode(true); toolIco.replaceWith(ico); ico.id="tool-ico";
+  const ico=ICONS[toolIcons[activeTool]].cloneNode(true); toolIcoP.replaceWith(ico); ico.id="tool-ico";
   toolName.textContent=toolNames[activeTool];
 
-  if(rebuildChips){
-    seedSel.innerHTML="";
-    SEED_TYPES.forEach((t,i)=>{
-      const chip=document.createElement("div");
-      chip.className="chip"+(i===activeSeedIdx?" active":"");
-      chip.textContent=`${t.name} [${state.seed_stock[t.id]}]`;
-      chip.addEventListener("click",()=>{ activeSeedIdx=i; refreshSidebar(false); });
-      seedSel.appendChild(chip);
-    });
-  }else{
-    [...seedSel.children].forEach((chip,i)=>{
-      chip.classList.toggle("active", i===activeSeedIdx);
-      chip.textContent=`${SEED_TYPES[i].name} [${state.seed_stock[SEED_TYPES[i].id]}]`;
-    });
-  }
-
-  shopDiv.innerHTML="";
-  function button(label,icon,fn){ const b=document.createElement("button"); b.className="btn"; b.appendChild(ICONS[icon].cloneNode(true)); b.append(" "+label); b.addEventListener("click",fn); shopDiv.appendChild(b); }
-  for(const t of SEED_TYPES){
-    button(`Купить семена: ${t.name} (+${t.pack}) — ${t.price}`,"seed",()=>{
-      if(state.coins>=t.price){ state.coins-=t.price; state.seed_stock[t.id]+=t.pack; SFX.buy(); refreshSidebar(false); }
-      else SFX.err();
-    });
-  }
-  button(`Сделать сок (−1 трава, +1)`,"juice",()=>{ if(state.grass>=1){ state.grass--; state.juice++; SFX.buy(); refreshSidebar(false);} else SFX.err(); });
-  button(`Продать сок (+${JUICE_PRICE} мон.)`,"coin",()=>{
-    if(state.juice>=1){ state.juice--; state.coins+=JUICE_PRICE; state.stats.sell_juice=(state.stats.sell_juice||0)+1; questEvent(state,"sell_juice"); SFX.buy(); refreshSidebar(false); }
-    else SFX.err();
-  });
-  button(`Купить лампу (+10%) — ${LAMP_PRICE}`,"lamp",()=>{ if(state.coins>=LAMP_PRICE){ state.coins-=LAMP_PRICE; state.lamps++; SFX.buy(); refreshSidebar(false);} else SFX.err(); });
-  button(`Купить удобрение (+1) — 12`,"fert",()=>{ if(state.coins>=12){ state.coins-=12; state.fert++; SFX.buy(); refreshSidebar(false);} else SFX.err(); });
-  button(`Автополив — ${state.autowater?"УЖЕ ЕСТЬ":"120 мон."}`,"water",()=>{ if(state.autowater) SFX.err(); else if(state.coins>=AUTOWATER_PRICE){ state.coins-=AUTOWATER_PRICE; state.autowater=true; SFX.buy(); refreshSidebar(false);} else SFX.err(); });
-  button(`Сохранить (S) / Загрузить (L)`,"save",()=>{ document.title="S — сохранить, L — загрузить"; setTimeout(()=>document.title="Витграсс-ферма (HTML)",1100); });
-  button(`Новая игра (R)`,"reset",()=>{ resetGame(); refreshSidebar(true); });
-
-  questsDiv.innerHTML="";
-  for(const q of state.quests){
-    const el=document.createElement("div"); el.className="q "+(q.claimed?"done":"");
-    el.textContent=`• ${q.name} — ${q.done}/${q.need} (+${q.reward} мон.)${q.claimed?" ✓":""}`; questsDiv.appendChild(el);
-  }
-  qdateDiv.textContent=`Обновление: ${state.quests_date}`;
+  if(doChips) buildSeedChips();
+  if(doLists){ buildShop(); renderQuests(); }
+  if(doAch){ renderAch(); }
+  updateLevelBar();
 }
 
-/* ---------- init ---------- */
+/* =============== Save/Load =============== */
+function saveState(){ try{ localStorage.setItem(SAVE_KEY,JSON.stringify(state)); if(state.settings.autosave) return; toast("Сохранено"); }catch(e){ console.warn("Save error",e); } }
+function loadState(){
+  try{
+    const raw=localStorage.getItem(SAVE_KEY); if(!raw) return false;
+    const data=JSON.parse(raw);
+    for(const t of SEED_TYPES){ if(!(t.id in data.seed_stock)) data.seed_stock[t.id]=0; }
+    if(!Array.isArray(data.pots)||data.pots.length!==12) data.pots=defaultState().pots;
+    state={...defaultState(),...data}; ensureDaily(state); ensureWeekly(state);
+    return true;
+  }catch(e){ console.warn("Load error",e); return false; }
+}
+function resetGame(){ state=defaultState(); ensureDaily(state); ensureWeekly(state); try{localStorage.removeItem(SAVE_KEY);}catch{}; }
+
+/* =============== Start/Tutorial/Toast =============== */
+const overlay=document.getElementById('overlay');
+const btnCont=document.getElementById('btnContinue');
+const btnNew=document.getElementById('btnNew');
+const btnTutor=document.getElementById('btnTutor');
+const muteCbx=document.getElementById('mute');
+const autosaveCbx=document.getElementById('autosave');
+function openStart(){ overlay.style.display='flex'; btnCont.disabled = !localStorage.getItem(SAVE_KEY); muteCbx.checked = !!state.settings.muted; autosaveCbx.checked = !!state.settings.autosave; }
+function closeStart(){ overlay.style.display='none'; }
+btnCont.onclick=()=>{ if(loadState()){ refreshSidebar(true,true,true); closeStart(); toast('Прогресс загружен'); } };
+btnNew.onclick=()=>{ resetGame(); refreshSidebar(true,true,true); closeStart(); openTutor(); };
+btnTutor.onclick=()=>{ closeStart(); openTutor(); };
+muteCbx.onchange=(e)=>{ state.settings.muted = e.target.checked; if(state.settings.muted && audioCtx){ try{ audioCtx.close(); }catch{} audioCtx=null; } };
+autosaveCbx.onchange=(e)=>{ state.settings.autosave = e.target.checked; if(state.settings.autosave) saveState(); };
+
+const tutor=document.getElementById('tutor');
+const tTitle=document.getElementById('tTitle');
+const tText=document.getElementById('tText');
+const tNext=document.getElementById('tNext');
+let tStep=0;
+const steps=[
+  ["Посадка","Выбери инструмент «Семена (1)», нажми на любой горшок. Посади 1 семя.",'seed'],
+  ["Полив","Выбери «Лейка (2)» и полей посаженный горшок.",'water'],
+  ["Ожидание","Подожди, пока вырастет (или купи лампу в магазине для ускорения).",'wait'],
+  ["Срез","Выбери «Ножницы (3)» и собери урожай.",'cut'],
+  ["Сок","Нажми «Сделать сок», затем «Продать сок». Готово!",'sell'],
+];
+function openTutor(){ tStep=0; tutor.style.display='flex'; renderTutor(); }
+function closeTutor(){ tutor.style.display='none'; toast('Обучение завершено!'); }
+tNext.onclick=()=>{ if(tStep<steps.length-1){ tStep++; renderTutor(); } else closeTutor(); };
+function renderTutor(){ tTitle.textContent=steps[tStep][0]; tText.textContent=steps[tStep][1]; }
+function tutorAdvance(flag){ const need=steps[tStep][2]; if(need===flag || (need==='wait' && flag==='cut')){ if(tStep<steps.length-1){ tStep++; renderTutor(); } } }
+
+const toastBox=document.getElementById('toast');
+function toast(text){ toastBox.textContent=text; toastBox.style.opacity=1; clearTimeout(toastBox._t); toastBox._t=setTimeout(()=>toastBox.style.opacity=0,1600); }
+
+/* =============== Init =============== */
 window.addEventListener("resize", resizeCanvas);
 ["pointerdown","keydown"].forEach(ev=>window.addEventListener(ev,ensureAudio,{once:true}));
-
-resizeCanvas();
-loadState();         // ← сперва загрузка
-refreshSidebar(true); // затем UI
+resizeCanvas(); ensureDaily(state); ensureWeekly(state);
+refreshSidebar(true,true,true);
 requestAnimationFrame(loop);
-window.addEventListener("beforeunload", saveState);
+window.addEventListener("beforeunload", ()=>{ if(state.settings.autosave) saveState(); });
+setTimeout(openStart,100);
 </script>
 </body>
 </html>
