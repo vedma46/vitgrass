@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
 <title>Витграсс-ферма (HTML — mobile tools + level-up popup)</title>
 <style>
   :root{
@@ -256,7 +256,7 @@ function questEvent(s,kind){
     }
   }
   if(changed){
-    achEvent(); // важно: пересчитать достижения по монетам/уровню
+    achEvent();
     refreshSidebar(false,true,true);
   }
 }
@@ -315,7 +315,6 @@ function addXP(amount){
     gained++;
   }
   if(gained>0){
-    // Полная перерисовка, чтобы новые семена появились сразу
     refreshSidebar(true,true,true);
     showLevelUp(state.level, allUnlocks);
   }
@@ -347,16 +346,28 @@ let layout={w:1200,h:720,margin:16,cols:3,rows:4,potW:120,potH:120,gapX:18,gapY:
 let potRects=Array.from({length:12},()=>({x:0,y:0,w:0,h:0}));
 let cachedLeaf=null;
 
+/* устойчивое измерение размеров враппера */
+function measureWrap(){
+  const r = wrap.getBoundingClientRect(); // стабильнее на iOS
+  return { w: Math.max(1, Math.round(r.width)), h: Math.max(1, Math.round(r.height)) };
+}
+
 function resizeCanvas(){
+  // recalibrate DPR каждый раз (на iOS при повороте меняется)
   DPR=(window.devicePixelRatio||1);
-  const w=wrap.clientWidth||800, h=wrap.clientHeight||500;
+
+  const {w,h}=measureWrap();
   canvas.width=Math.max(1,Math.floor(w*DPR));
   canvas.height=Math.max(1,Math.floor(h*DPR));
   canvas.style.width=w+"px"; canvas.style.height=h+"px";
+
+  // сброс и установка трансформа
   ctx.setTransform(DPR,0,0,DPR,0,0);
+
   rebuildLayout(w,h);
   if(!cachedLeaf) cachedLeaf=makeLeaf(Math.max(18,Math.floor(Math.min(w,h)*0.02)));
 }
+
 function rebuildLayout(w,h){
   layout.w=w; layout.h=h;
   layout.margin=Math.max(12,Math.floor(w*0.014));
@@ -546,7 +557,6 @@ window.addEventListener("keydown",(e)=>{
   else if(e.key.toLowerCase()==="l"){ if(loadState()) refreshSidebar(true,true,true); }
   else if(e.key.toLowerCase()==="r"){ resetGame(); refreshSidebar(true,true,true); openStart(false); }
   syncToolUI();
-  // ключевая правка: если меняли вид семян — пересобираем чипы
   refreshSidebar(seedChanged, true, false);
 });
 
@@ -589,7 +599,6 @@ function buildSeedChips(){
     chip.className="chip"+(i===activeSeedIdx?" active":"");
     chip.textContent=`${t.name} [${state.seed_stock[t.id]}]${!unlocked?' 🔒':''}`;
     chip.style.opacity = unlocked?1:0.5;
-    // ключевая правка: при клике пересобираем чипы
     chip.addEventListener("click",()=>{ 
       if(unlocked){ 
         activeSeedIdx=i; 
@@ -771,8 +780,17 @@ function syncToolUI(){
   if(toolSelect) toolSelect.value = String(activeTool);
 }
 
-/* =============== Init =============== */
-window.addEventListener("resize", resizeCanvas);
+/* =============== Init / Resize hooks =============== */
+let resizeRAF=null;
+function requestResize(){
+  if(resizeRAF) cancelAnimationFrame(resizeRAF);
+  resizeRAF = requestAnimationFrame(()=>{ resizeCanvas(); resizeRAF=null; });
+}
+window.addEventListener("resize", requestResize);
+window.addEventListener("orientationchange", ()=>{ setTimeout(requestResize, 150); });
+if(window.visualViewport){
+  window.visualViewport.addEventListener('resize', ()=>{ setTimeout(requestResize, 50); });
+}
 ["pointerdown","keydown"].forEach(ev=>window.addEventListener(ev,ensureAudio,{once:true}));
 resizeCanvas(); ensureDaily(state); ensureWeekly(state);
 refreshSidebar(true,true,true);
