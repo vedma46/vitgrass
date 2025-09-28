@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Витграсс-ферма (HTML — complete, fixed)</title>
+<title>Витграсс-ферма (HTML — mobile tools + level-up popup)</title>
 <style>
   :root{
     --bg-top:#ebf6ef; --bg-bottom:#d6ebdd;
@@ -18,6 +18,10 @@
   #app{display:flex;gap:12px;height:100%;padding:12px;overflow:hidden}
   .left{flex:1;min-width:0;display:flex;flex-direction:column}
   #hint{font-size:12px;line-height:1.2;padding:6px 4px 2px 4px;opacity:.85}
+  /* mobile bar */
+  .mobilebar{padding:6px 4px 2px 4px; display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+  .mobilebar .pill{display:inline-flex; align-items:center}
+  select#toolSelect{font-size:14px;border:1px solid var(--tabb);border-radius:8px;padding:6px 8px;background:#fff}
   #gamewrap{position:relative;flex:1;min-height:220px;border-radius:16px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.06)}
   #game{width:100%;height:100%;display:block;background:transparent}
   .right{width:min(440px,34vw);min-width:300px;max-width:560px;background:var(--white);border:2px solid var(--grey);border-radius:18px;padding:14px;overflow:hidden;display:flex;flex-direction:column}
@@ -40,7 +44,8 @@
   .icon{width:22px;height:22px;display:inline-block;vertical-align:middle}
   .bar{height:8px;background:#edf2f7;border-radius:6px;overflow:hidden;margin-top:4px}
   .fill{height:100%;background:#b5e0bd;width:0%}
-  #overlay,#tutor{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.4);z-index:10}
+  /* overlays */
+  #overlay,#tutor,#levelup{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.4);z-index:10}
   .panel{background:#fff;border-radius:16px;border:1px solid var(--line);padding:18px;max-width:520px;width:min(92vw,520px);box-shadow:0 10px 30px rgba(0,0,0,.15)}
   .panel h2{margin:0 0 12px}
   .panel .btn{margin:6px 0}
@@ -54,6 +59,20 @@
 <div id="app">
   <div class="left">
     <div id="hint">1: Семена • 2: Лейка • 3: Ножницы • 4: Удобрение | ←/→ — смена вида семян | S/L — сейв/лоад, R — новая игра</div>
+
+    <!-- MOBILE TOOL SELECT -->
+    <div class="mobilebar">
+      <label class="pill" style="gap:6px">
+        Инструмент:
+        <select id="toolSelect" style="margin-left:6px">
+          <option value="1">Семена</option>
+          <option value="2">Лейка</option>
+          <option value="3">Ножницы</option>
+          <option value="4">Удобрение</option>
+        </select>
+      </label>
+    </div>
+
     <div id="gamewrap"><canvas id="game"></canvas></div>
   </div>
   <aside class="right">
@@ -115,6 +134,19 @@
     <h2 id="tTitle">Обучение</h2>
     <div id="tText" style="font-size:15px"></div>
     <button class="btn" id="tNext">Далее</button>
+  </div>
+</div>
+
+<!-- LEVEL-UP POPUP -->
+<div id="levelup">
+  <div class="panel" id="luPanel">
+    <h2 id="luTitle">Новый уровень!</h2>
+    <div id="luBody" style="font-size:15px;line-height:1.4">
+      <div id="luList"></div>
+      <div class="tip" id="luTip" style="display:none;margin-top:10px"></div>
+    </div>
+    <button class="btn" id="luShop">В магазин</button>
+    <button class="btn" id="luClose">Отлично</button>
   </div>
 </div>
 
@@ -187,14 +219,46 @@ function genQuests(pool,seed,count){
   while(pick.length<count&&src.length){ pick.push(src.splice(Math.floor(rnd()*src.length),1)[0]); }
   return pick.map(([n,need,k,rw])=>({name:n,need,key:k,done:0,reward:rw,claimed:false}));
 }
-function ensureDaily(s){ if(s.quests_date!==todayKey()){ s.quests=genQuests(QUEST_POOL_DAILY, parseInt(todayKey().replaceAll('-',''),10)||20250101, 3); s.quests_date=todayKey(); } }
-function ensureWeekly(s){ const wk=weekKey(); if(s.weekly_key!==wk){ s.weekly=genQuests(QUEST_POOL_WEEK, parseInt(wk.replace('W',''),10)||202501, 2); s.weekly_key=wk; } }
+function ensureDaily(s){
+  if(s.quests_date!==todayKey()){
+    const seedNum = parseInt(todayKey().replace(/-/g,''),10) || 20250101;
+    s.quests=genQuests(QUEST_POOL_DAILY, seedNum, 3);
+    s.quests_date=todayKey();
+  }
+}
+function ensureWeekly(s){
+  const wk=weekKey();
+  if(s.weekly_key!==wk){
+    const seedNum = parseInt(wk.replace('W',''),10) || 202501;
+    s.weekly=genQuests(QUEST_POOL_WEEK, seedNum, 2);
+    s.weekly_key=wk;
+  }
+}
 
 function questEvent(s,kind){
   let changed=false;
-  for(const q of s.quests){ if(q.key===kind && !q.claimed){ q.done=Math.min(q.need,q.done+1); if(q.done>=q.need && !q.claimed){ toast(`Дейлик готов! +${q.reward} мон.`); q.claimed=true; s.coins+=q.reward; changed=true; } } }
-  for(const q of s.weekly){ if(q.key===kind && !q.claimed){ q.done=Math.min(q.need,q.done+1); if(q.done>=q.need && !q.claimed){ toast(`Еженедельный готов! +${q.reward} мон.`); q.claimed=true; s.coins+=q.reward; changed=true; } } }
-  if(changed) refreshSidebar(false,true,true);
+  for(const q of s.quests){
+    if(q.key===kind && !q.claimed){
+      q.done=Math.min(q.need,q.done+1);
+      if(q.done>=q.need && !q.claimed){
+        toast(`Дейлик готов! +${q.reward} мон.`);
+        q.claimed=true; s.coins+=q.reward; changed=true;
+      }
+    }
+  }
+  for(const q of s.weekly){
+    if(q.key===kind && !q.claimed){
+      q.done=Math.min(q.need,q.done+1);
+      if(q.done>=q.need && !q.claimed){
+        toast(`Еженедельный готов! +${q.reward} мон.`);
+        q.claimed=true; s.coins+=q.reward; changed=true;
+      }
+    }
+  }
+  if(changed){
+    achEvent(); // важно: пересчитать достижения по монетам/уровню
+    refreshSidebar(false,true,true);
+  }
 }
 
 /* =============== Achievements =============== */
@@ -214,14 +278,17 @@ function achEvent(){
   let changed=false;
   for(const a of ACH_POOL){
     const st=state.achievements[a.id]||{progress:0,done:false,claimed:false};
-    if(st.done && st.claimed) continue;
+    if(st.done && st.claimed){ state.achievements[a.id]=st; continue; }
     const val = a.type==='value'
       ? (a.key==='coins'?state.coins:(a.key==='lamps'?state.lamps:(a.key==='level'?state.level:0)))
       : (state.stats[a.key]||0);
     st.progress=Math.max(st.progress,val);
     if(!st.done && st.progress>=a.target){
       st.done=true;
-      if(!st.claimed){ state.coins+=a.reward; toast(`Достижение: «${a.name}»  +${a.reward} мон.`); }
+      if(!st.claimed){
+        state.coins+=a.reward;
+        toast(`Достижение: «${a.name}»  +${a.reward} мон.`);
+      }
       st.claimed=true;
       changed=true;
     }
@@ -231,18 +298,30 @@ function achEvent(){
 }
 
 /* =============== Level / XP =============== */
+function levelReq(level){ return 30 + (level-1)*20; }
+function getUnlocksForLevel(lvl){
+  const seeds = SEED_TYPES.filter(t=>t.unlock===lvl).map(t=>t.name);
+  return {seeds};
+}
 function addXP(amount){
   state.xp += amount;
-  const req = levelReq(state.level);
-  while(state.xp>=req){
-    state.xp -= req;
+  let gained=0;
+  const allUnlocks={seeds:[]};
+  while(state.xp>=levelReq(state.level)){
+    state.xp -= levelReq(state.level);
     state.level += 1;
-    toast(`Новый уровень: ${state.level}! Открытия в магазине.`);
+    const u=getUnlocksForLevel(state.level);
+    allUnlocks.seeds.push(...u.seeds);
+    gained++;
+  }
+  if(gained>0){
+    // Полная перерисовка, чтобы новые семена появились сразу
+    refreshSidebar(true,true,true);
+    showLevelUp(state.level, allUnlocks);
   }
   achEvent();
   updateLevelBar();
 }
-function levelReq(level){ return 30 + (level-1)*20; }
 
 /* =============== Audio =============== */
 let audioCtx=null;
@@ -465,6 +544,7 @@ window.addEventListener("keydown",(e)=>{
   else if(e.key.toLowerCase()==="s"){ if(state.settings.autosave) toast("Автосейв включён"); else saveState(); }
   else if(e.key.toLowerCase()==="l"){ if(loadState()) refreshSidebar(true,true,true); }
   else if(e.key.toLowerCase()==="r"){ resetGame(); refreshSidebar(true,true,true); openStart(false); }
+  syncToolUI();
   refreshSidebar(false,true,false);
 });
 
@@ -479,16 +559,19 @@ const tabAch=document.getElementById("tab-ach");
 const lvlSpan=document.getElementById("lvl");
 const xpFill=document.getElementById("xpFill");
 const xpText=document.getElementById("xpText");
+const toolSelect=document.getElementById('toolSelect');
+
+/* Tabs helper */
+function openTab(which){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.tab===which));
+  tabShop.style.display   = which==='shop'?'':'none';
+  tabQuests.style.display = which==='quests'?'':'none';
+  tabAch.style.display    = which==='ach'?'':'none';
+}
 document.querySelectorAll('.tab').forEach(el=>{
-  el.onclick=()=>{
-    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-    el.classList.add('active');
-    const id=el.dataset.tab;
-    tabShop.style.display = id==='shop'?'':'none';
-    tabQuests.style.display = id==='quests'?'':'none';
-    tabAch.style.display = id==='ach'?'':'none';
-  };
+  el.onclick=()=>openTab(el.dataset.tab);
 });
+
 function updateLevelBar(){
   lvlSpan.textContent = state.level;
   const need = levelReq(state.level);
@@ -584,6 +667,7 @@ function refreshSidebar(doChips=true, doLists=true, doAch=false){
   if(doLists){ buildShop(); renderQuests(); }
   if(doAch){ renderAch(); }
   updateLevelBar();
+  syncToolUI();
 }
 
 /* =============== Save/Load =============== */
@@ -635,6 +719,47 @@ function tutorAdvance(flag){ const need=steps[tStep][2]; if(need===flag || (need
 
 const toastBox=document.getElementById('toast');
 function toast(text){ toastBox.textContent=text; toastBox.style.opacity=1; clearTimeout(toastBox._t); toastBox._t=setTimeout(()=>toastBox.style.opacity=0,1600); }
+
+/* =============== Level-Up Popup =============== */
+const levelup=document.getElementById('levelup');
+const luTitle=document.getElementById('luTitle');
+const luList=document.getElementById('luList');
+const luTip=document.getElementById('luTip');
+const luShop=document.getElementById('luShop');
+const luClose=document.getElementById('luClose');
+
+function showLevelUp(level, unlocks){
+  luTitle.textContent = `Новый уровень: ${level}!`;
+  luList.innerHTML = "";
+  const parts=[];
+  if(unlocks && unlocks.seeds && unlocks.seeds.length){
+    const p=document.createElement('div');
+    p.innerHTML = `<b>Открыты семена:</b> ${unlocks.seeds.join(", ")}`;
+    parts.push(p);
+  }
+  if(parts.length===0){
+    const p=document.createElement('div');
+    p.textContent="Новых предметов нет, но ферма становится эффективнее!";
+    parts.push(p);
+  }
+  parts.forEach(el=>luList.appendChild(el));
+  luTip.style.display = 'block';
+  luTip.textContent = 'Подсказка: загляни в «Магазин», чтобы купить новое.';
+  levelup.style.display='flex';
+}
+luClose.onclick=()=>{ levelup.style.display='none'; };
+luShop.onclick=()=>{ levelup.style.display='none'; openTab('shop'); };
+
+/* =============== Mobile tool select =============== */
+if(toolSelect){
+  toolSelect.addEventListener('change',(e)=>{
+    activeTool = Number(e.target.value)||TOOL_SEED;
+    refreshSidebar(false,false,false);
+  });
+}
+function syncToolUI(){
+  if(toolSelect) toolSelect.value = String(activeTool);
+}
 
 /* =============== Init =============== */
 window.addEventListener("resize", resizeCanvas);
