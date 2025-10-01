@@ -3,797 +3,547 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
-<title>Витграсс-ферма (HTML — mobile tools + level-up popup)</title>
+<title>Витграсс-ферма — мобильная версия</title>
 <style>
   :root{
-    --bg-top:#ebf6ef; --bg-bottom:#d6ebdd;
-    --white:#fff; --grey:#d2d7d7; --black:#1e1e1e;
-    --green:#4eac60; --orange:#e68c46; --mint:#bee6c8;
-    --brown:#966e50; --darkbrown:#78543c; --blue:#5082c8;
-    --ink2:#6b7280; --line:#e5e9eb;
-    --tab:#f6faf7; --tabb:#cfe3d4; --pill:#edf7ef;
+    --bg:#092733; --bg2:#0e3341;
+    --panel:#0b2b38; --panel2:#0f3240;
+    --ink:#e6fbff; --ink2:#bfe9f3;
+    --accent:#23d2ff; --green:#42e87a; --gold:#ffd46b; --pink:#ff6f9c;
+    --outline:#001922; --shadow:rgba(0,0,0,.5);
   }
   *{box-sizing:border-box}
-  html,body{height:100%;margin:0;background:linear-gradient(180deg,var(--bg-top),var(--bg-bottom));color:var(--black);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
-  #app{display:flex;gap:12px;height:100%;padding:12px;overflow:hidden}
-  .left{flex:1;min-width:0;display:flex;flex-direction:column}
-  #hint{font-size:12px;line-height:1.2;padding:6px 4px 2px 4px;opacity:.85}
-  .mobilebar{padding:6px 4px 2px 4px; display:flex; gap:8px; align-items:center; flex-wrap:wrap}
-  .mobilebar .pill{display:inline-flex; align-items:center}
-  select#toolSelect{font-size:14px;border:1px solid var(--tabb);border-radius:8px;padding:6px 8px;background:#fff}
-  #gamewrap{position:relative;flex:1;min-height:220px;border-radius:16px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.06)}
-  #game{width:100%;height:100%;display:block;background:transparent}
-  .right{width:min(440px,34vw);min-width:300px;max-width:560px;background:var(--white);border:2px solid var(--grey);border-radius:18px;padding:14px;overflow:hidden;display:flex;flex-direction:column}
-  #sidebar{overflow:auto;padding-right:8px}
-  .title{display:flex;align-items:center;gap:10px;font-weight:700;font-size:22px;margin-bottom:8px}
-  .pill{display:inline-flex;align-items:center;gap:8px;background:var(--pill);border:1px solid var(--tabb);border-radius:999px;padding:6px 10px;font-size:13px}
-  .tabs{display:flex;gap:6px;margin:6px 0 8px}
-  .tab{flex:1;background:var(--tab);border:1px solid var(--tabb);padding:8px 10px;border-radius:12px;cursor:pointer;text-align:center}
-  .tab.active{background:#dff0e4;border-color:#9fd1ab;font-weight:700}
-  .chipbar{display:flex;flex-wrap:wrap;gap:8px;margin:.25rem 0 .5rem}
-  .chip{font-size:13px;padding:6px 10px;border-radius:12px;background:var(--white);border:2px solid var(--grey);cursor:pointer;user-select:none}
-  .chip.active{background:#b4e1be;border-color:#74b685}
-  .toolhdr{display:flex;align-items:center;gap:10px;background:var(--mint);border-radius:10px;padding:8px 10px;margin:6px 0 10px}
-  .btn{width:100%;text-align:left;border:2px solid var(--grey);background:var(--white);border-radius:12px;padding:10px 12px;margin:8px 0;cursor:pointer}
-  .btn:hover{background:#fafafa}
-  .row{display:flex;align-items:flex-start;gap:8px;margin:6px 0}
-  .kv{font-size:15px;line-height:1.25}
-  .q{font-size:13px;margin:2px 0}
-  .q.done{color:var(--green);font-weight:600}
-  .icon{width:22px;height:22px;display:inline-block;vertical-align:middle}
-  .bar{height:8px;background:#edf2f7;border-radius:6px;overflow:hidden;margin-top:4px}
-  .fill{height:100%;background:#b5e0bd;width:0%}
-  #overlay,#tutor,#levelup{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.4);z-index:10}
-  .panel{background:#fff;border-radius:16px;border:1px solid var(--line);padding:18px;max-width:520px;width:min(92vw,520px);box-shadow:0 10px 30px rgba(0,0,0,.15)}
-  .panel h2{margin:0 0 12px}
-  .panel .btn{margin:6px 0}
-  .tip{background:#fff4d6;border:1px solid #f0d390;border-radius:12px;padding:10px;margin-top:8px;font-size:14px}
-  #toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:#111;color:#fff;border-radius:999px;padding:8px 14px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:20}
-  @media (max-width:900px){ .right{width:38vw;min-width:260px}.title{font-size:20px} }
-  @media (max-width:700px){ #app{flex-direction:column}.right{width:100%;max-height:48vh} }
+  html,body{height:100%;margin:0;background:radial-gradient(120% 100% at 50% 0%,var(--bg2),var(--bg));color:var(--ink);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+  #root{position:relative;height:100%;max-width:780px;margin:0 auto;display:flex;flex-direction:column;gap:6px}
+
+  /* HUD TOP */
+  .hud{display:flex;align-items:center;justify-content:space-between;padding:8px 10px 0}
+  .avatar{display:flex;align-items:center;gap:10px}
+  .ava{width:46px;height:46px;border-radius:10px;background:#fff1;box-shadow:0 3px 0 var(--outline) inset,0 6px 16px var(--shadow)}
+  .lvl{display:flex;flex-direction:column;gap:4px;min-width:150px}
+  .lvl b{font-weight:800;font-size:13px;letter-spacing:.2px}
+  .bar{height:8px;background:#0a2530;border:2px solid #07303d;border-radius:999px;overflow:hidden}
+  .fill{height:100%;width:0;background:linear-gradient(90deg,#39f5ff,#2fe3ff 60%,#31caff);box-shadow:0 0 10px #31caff}
+
+  .res{display:flex;gap:16px;align-items:center}
+  .res .chip{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:12px;background:linear-gradient(#103846,#0f3340);border:2px solid #0a2430;box-shadow:0 3px 0 #00161d inset}
+  .ico{font-weight:900;text-shadow:0 2px 0 #0004}
+  .g{color:var(--green)} .c{color:var(--gold)} .j{color:#6fd1ff}
+
+  /* GAME CANVAS */
+  #gamewrap{position:relative;flex:1;min-height:420px;margin:4px 8px;border-radius:18px;
+    box-shadow:inset 0 0 0 2px #0a2a36, 0 12px 24px var(--shadow);
+    background:linear-gradient(180deg,#0b2d3a,#0b2630 60%,#0a202a)}
+  #game{width:100%;height:100%;display:block}
+
+  /* BOTTOM BAR */
+  .nav{position:relative;display:flex;gap:14px;justify-content:space-between;padding:10px 14px 16px}
+  .btn{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;height:58px;border-radius:16px;
+    background:linear-gradient(#165063,#133c4a);border:3px solid #0a2c38;
+    box-shadow:0 5px 0 #001922, 0 8px 20px var(--shadow);font-weight:800}
+  .btn.big{height:62px;transform:translateY(-6px);background:linear-gradient(#1f7aa0,#15607a);border-color:#0a3a49}
+  .btn:active{transform:translateY(1px)}
+  .btn span{font-size:14px;letter-spacing:.2px}
+  .bicon{width:22px;height:22px;display:inline-block}
+
+  /* MODALS */
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:flex-end;justify-content:center;padding:12px;z-index:20}
+  .sheet{width:min(720px,96vw);max-height:82vh;overflow:auto;border-radius:18px;background:linear-gradient(#0d3240,#0a2a36);border:2px solid #0a2c38;box-shadow:0 14px 34px var(--shadow);padding:14px}
+  .sheet h3{margin:4px 2px 10px;font-size:18px}
+  .row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:8px 0;padding:10px;border-radius:12px;background:#0b2a35;border:1px solid #0a3341}
+  .row small{opacity:.85;color:var(--ink2)}
+  .primary{background:linear-gradient(#23d2ff,#19aac9);border:0;color:#05313d;padding:10px 14px;border-radius:10px;font-weight:900}
+  .ghost{background:#103847;border:1px solid #124352;color:#bcecff;padding:8px 12px;border-radius:10px;font-weight:800}
+  .row .primary:disabled{opacity:.55}
+  .closebar{display:flex;justify-content:center;margin-top:10px}
+  .pill{padding:6px 10px;border-radius:12px;background:#134151;border:1px solid #0e3442}
+
+  /* Toast */
+  #toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:#00161d;color:#d8fbff;border:2px solid #0a3341;border-radius:999px;padding:8px 14px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:40}
+
+  @media (max-width:420px){ .btn span{display:none} }
 </style>
 </head>
 <body>
-<div id="app">
-  <div class="left">
-    <div id="hint">1: Семена • 2: Лейка • 3: Ножницы • 4: Удобрение | ←/→ — смена вида семян | S/L — сейв/лоад, R — новая игра</div>
-
-    <div class="mobilebar">
-      <label class="pill" style="gap:6px">
-        Инструмент:
-        <select id="toolSelect" style="margin-left:6px">
-          <option value="1">Семена</option>
-          <option value="2">Лейка</option>
-          <option value="3">Ножницы</option>
-          <option value="4">Удобрение</option>
-        </select>
-      </label>
+<div id="root">
+  <!-- HUD -->
+  <div class="hud">
+    <div class="avatar">
+      <div class="ava"></div>
+      <div class="lvl">
+        <b>Farm Lv.<span id="lv">1</span></b>
+        <div class="bar"><div id="xpFill" class="fill"></div></div>
+        <small id="xpText" style="color:var(--ink2)">30 XP to next</small>
+      </div>
     </div>
-
-    <div id="gamewrap"><canvas id="game"></canvas></div>
+    <div class="res">
+      <div class="chip"><span class="ico g">🌿</span><b id="rGrass">0</b></div>
+      <div class="chip"><span class="ico j">🥤</span><b id="rJuice">0</b></div>
+      <div class="chip"><span class="ico c">🪙</span><b id="rCoins">30</b></div>
+    </div>
   </div>
-  <aside class="right">
-    <div id="sidebar">
-      <div class="title"><span class="icon" id="icon-seed"></span><span>Витграсс Ферма</span></div>
 
-      <div class="row pill" style="gap:12px">
-        <div>Уровень фермы: <b id="lvl">1</b></div>
-        <div style="flex:1">
-          <div class="bar"><div id="xpFill" class="fill"></div></div>
-          <div style="font-size:12px;color:var(--ink2)"><span id="xpText"></span> до следующего</div>
-        </div>
-      </div>
+  <!-- GAME -->
+  <div id="gamewrap"><canvas id="game"></canvas></div>
 
-      <div id="stats" style="margin-top:6px"></div>
-
-      <div class="toolhdr"><span class="icon" id="tool-ico"></span><span id="tool-name"></span></div>
-      <div id="seedSelector" class="chipbar" aria-label="Виды семян"></div>
-
-      <div class="tabs">
-        <div class="tab active" data-tab="shop">Магазин</div>
-        <div class="tab" data-tab="quests">Квесты</div>
-        <div class="tab" data-tab="ach">Достижения</div>
-      </div>
-
-      <div id="tab-shop"></div>
-      <div id="tab-quests" style="display:none">
-        <h4 style="margin:.5rem 0 .25rem;font-size:16px">Ежедневные</h4>
-        <div id="dailyList"></div>
-        <div id="qdate" style="font-size:12px;color:#96a0a0;margin-top:4px"></div>
-        <h4 style="margin:.75rem 0 .25rem;font-size:16px">Еженедельные</h4>
-        <div id="weeklyList"></div>
-        <div id="wdate" style="font-size:12px;color:#96a0a0;margin-top:4px"></div>
-      </div>
-      <div id="tab-ach" style="display:none">
-        <div id="achList"></div>
-      </div>
-    </div>
-  </aside>
-</div>
-
-<div id="overlay">
-  <div class="panel" id="startPanel">
-    <h2>Витграсс-ферма</h2>
-    <div class="tip">Уютная ферма: сажай, поливай, жди рост, срезай, делай сок и улучшай ферму.</div>
-    <button class="btn" id="btnContinue">Продолжить</button>
-    <button class="btn" id="btnNew">Новая игра</button>
-    <button class="btn" id="btnTutor">Обучение (60 сек.)</button>
-    <hr style="border:0;border-top:1px solid var(--line);margin:10px 0">
-    <div style="display:flex;gap:8px;align-items:center">
-      <label class="pill"><input type="checkbox" id="mute" style="margin-right:8px">Тихий режим</label>
-      <label class="pill"><input type="checkbox" id="autosave" style="margin-right:8px" checked>Автосейв</label>
-    </div>
+  <!-- NAV -->
+  <div class="nav">
+    <button id="navShop" class="btn"><span class="bicon">🛒</span><span>Магазин</span></button>
+    <button id="navInv"  class="btn"><span class="bicon">🎒</span><span>Инвентарь</span></button>
+    <button id="navMain" class="btn big"><span class="bicon">💧</span><span>Полив</span></button>
+    <button id="navUpg"  class="btn"><span class="bicon">⚡</span><span>Апгрейд</span></button>
+    <button id="navQ"    class="btn"><span class="bicon">📜</span><span>Квесты</span></button>
   </div>
 </div>
 
-<div id="tutor">
-  <div class="panel" id="tutorPanel">
-    <h2 id="tTitle">Обучение</h2>
-    <div id="tText" style="font-size:15px"></div>
-    <button class="btn" id="tNext">Далее</button>
-  </div>
-</div>
+<!-- SHEETS -->
+<div id="sheetShop" class="modal"><div class="sheet">
+  <h3>🛒 Магазин</h3>
+  <div id="shopList"></div>
+  <div class="closebar"><button class="ghost" data-close="sheetShop">Закрыть</button></div>
+</div></div>
 
-<div id="levelup">
-  <div class="panel" id="luPanel">
-    <h2 id="luTitle">Новый уровень!</h2>
-    <div id="luBody" style="font-size:15px;line-height:1.4">
-      <div id="luList"></div>
-      <div class="tip" id="luTip" style="display:none;margin-top:10px"></div>
-    </div>
-    <button class="btn" id="luShop">В магазин</button>
-    <button class="btn" id="luClose">Отлично</button>
+<div id="sheetInv" class="modal"><div class="sheet">
+  <h3>🎒 Инвентарь</h3>
+  <div id="invList"></div>
+  <div class="pill" style="margin-top:8px">Режим удобрения: <b id="fertModeLabel">выкл</b></div>
+  <div class="closebar"><button class="ghost" data-close="sheetInv">Закрыть</button></div>
+</div></div>
+
+<div id="sheetUpg" class="modal"><div class="sheet">
+  <h3>⚡ Апгрейды</h3>
+  <div id="upgList"></div>
+  <div class="closebar"><button class="ghost" data-close="sheetUpg">Закрыть</button></div>
+</div></div>
+
+<div id="sheetQ" class="modal"><div class="sheet">
+  <h3>📜 Квесты</h3>
+  <div id="qList"></div>
+  <div class="closebar"><button class="ghost" data-close="sheetQ">Закрыть</button></div>
+</div></div>
+
+<!-- CONTRACTS -->
+<div id="sheetContract" class="modal"><div class="sheet">
+  <h3>📦 Контракт на сок</h3>
+  <div id="contractBody"></div>
+  <div class="closebar">
+    <button class="ghost" data-close="sheetContract">Позже</button>
   </div>
-</div>
+</div></div>
 
 <div id="toast"></div>
 
 <script>
-/* =============== Icons =============== */
-function svg(path){
-  const s=document.createElement("span");
-  s.className="icon";
-  s.innerHTML=`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">${path}</svg>`;
-  return s;
-}
-const ICONS={
-  seed:svg(`<path d="M12 22V7"/><ellipse cx="14" cy="6" rx="3" ry="2"/><ellipse cx="9" cy="8" rx="2.2" ry="1.4"/>`),
-  water:svg(`<path d="M12 3 L17 13 L12 21 L7 13 Z"/>`),
-  scissors:svg(`<circle cx="9" cy="15" r="2.5"/><circle cx="15" cy="15" r="2.5"/><path d="M10 13 L16.5 6"/><path d="M14 13 L7.5 6"/>`),
-  fert:svg(`<rect x="8" y="6" width="8" height="12" rx="2"/><path d="M12 4 L14 6"/>`),
-  lamp:svg(`<circle cx="12" cy="9" r="4.5"/><rect x="10" y="14" width="4" height="4" rx="1"/>`),
-  coin:svg(`<ellipse cx="12" cy="14" rx="6" ry="3.6"/>`),
-  juice:svg(`<rect x="9" y="5" width="6" height="12" rx="1.5"/><path d="M15 5 L18 3"/>`),
-  save:svg(`<rect x="6" y="6" width="12" height="12" rx="2"/><rect x="8.5" y="8" width="7" height="4" rx="1"/>`),
-  reset:svg(`<path d="M7 7 A7 7 0 1 0 17 12"/><path d="M17 6 L17 11 L12 11"/>`),
-};
-document.getElementById("icon-seed").replaceWith(ICONS.seed.cloneNode(true));
+/* =================== DATA =================== */
+const SAVE_KEY="wg_mobile_v2";
 
-/* =============== Consts =============== */
-const JUICE_PRICE=6, LAMP_PRICE=40, LAMP_GROWTH_BONUS=0.10;
-const AUTOWATER_PRICE=120, AUTOWATER_TICK=5.0, AUTOWATER_AMOUNT=0.18;
-const TOOL_SEED=1, TOOL_WATER=2, TOOL_HARVEST=3, TOOL_FERT=4;
 const SEEDED=0, SPROUT=1, GROWTH=2, MATURE=3, OVERGROWN=4;
-const STAGE_TIMERS={0:15,1:25,2:35,3:45,4:Infinity};
-const SEED_TYPES=[
-  {id:"basic",name:"Обычные",pack:5,price:10,speed:1.00,ym:2,yo:1,color:[70,170,80], unlock:1},
-  {id:"fast",name:"Скороспелые",pack:5,price:14,speed:1.35,ym:1,yo:1,color:[90,190,120], unlock:2},
-  {id:"juicy",name:"Сочные",pack:5,price:18,speed:0.95,ym:3,yo:1,color:[60,160,90], unlock:4},
-  {id:"premium",name:"Премиум",pack:3,price:22,speed:0.85,ym:4,yo:2,color:[56,150,86], unlock:6},
+const STAGE_TIME=[8,14,22,30,Infinity];
+const AUTOWATER_TICK=5, AUTOWATER_AMOUNT=.18;
+
+const LAMP_COST = 150;         // фиксированная высокая цена за лампу
+const PER_LAMP = 0.20;         // ~20% за лампу с убывающей отдачей
+const FERT_PRICE = 28;         // удобрение дорогое
+const FERT_DURATION = 120;     // сек
+let FERT_MODE = false;         // клик по растению применяет удобрение
+
+const SEEDS=[
+  {id:'basic',   name:'Обычные',   pack:5, price:12, speed:1.00, ym:2, yo:1, unlock:1, color:[84,210,110]},
+  {id:'fast',    name:'Скороспелые',pack:5, price:16, speed:1.35, ym:1, yo:1, unlock:2, color:[96,230,150]},
+  {id:'juicy',   name:'Сочные',    pack:5, price:20, speed:0.95, ym:3, yo:1, unlock:4, color:[74,205,118]},
+  {id:'premium', name:'Премиум',   pack:3, price:26, speed:0.85, ym:4, yo:2, unlock:6, color:[68,190,110]},
 ];
 
-/* =============== Save/State =============== */
-const SAVE_KEY="vitgrass_save_v4";
 function defaultState(){
-  const stock=Object.fromEntries(SEED_TYPES.map(t=>[t.id,0])); stock.basic=6;
+  const stock=Object.fromEntries(SEEDS.map(s=>[s.id,0])); stock.basic=6;
   return {
-    coins:30, seed_stock:stock, grass:0, juice:0, lamps:0, autowater:false, fert:0,
-    stats:{harvests:0,sell_juice:0,waters:0,plants:0,play_seconds:0},
-    level:1, xp:0, settings:{muted:false, autosave:true},
-    quests:[], quests_date:"", weekly:[], weekly_key:"",
-    achievements:{},
-    pots:Array.from({length:12},()=>({has_seed:false,stage:SEEDED,stage_time:0,moisture:0,fert_time_left:0,seed_type:0,cut_flash:0}))
+    level:1, xp:0, coins:30, grass:0, juice:0,
+    seeds:stock, selSeed:'basic',
+    autowater:false, fert:0,
+    lampStock:0,                 // купленные, не установленные лампы
+    stats:{plants:0, waters:0, harvests:0, sell:0, play:0},
+    pots:Array.from({length:12},()=>({has:false,seed:0,stage:SEEDED, t:0, moist:0, fert:0, flash:0, lamps:0})),
+    contract:null,               // {need, price, ttl}
+    nextContract: 90             // таймер до появления следующего контракта (сек)
   };
 }
-let state=defaultState();
+let S = load() || defaultState();
 
-function todayKey(){ return new Date().toISOString().slice(0,10); }
-function weekKey(){
-  const d=new Date();
-  const tmp=new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-  const day=(tmp.getUTCDay()||7); tmp.setUTCDate(tmp.getUTCDate()+4-day);
-  const yearStart=new Date(Date.UTC(tmp.getUTCFullYear(),0,1));
-  const week=Math.ceil((((tmp-yearStart)/86400000)+1)/7);
-  return `${tmp.getUTCFullYear()}-W${String(week).padStart(2,'0')}`;
-}
-function seededRandom(seed){ let x=seed|0; if(x===0)x=123456789; return ()=>{ x^=x<<13; x^=x>>>17; x^=x<<5; return ((x>>>0)%1e9)/1e9; }; }
+/* =================== CANVAS =================== */
+const wrap=document.getElementById('gamewrap'), cvs=document.getElementById('game'), ctx=cvs.getContext('2d');
+let DPR=1, L={w:0,h:0, cols:3, rows:4, pw:120, ph:100, gx:16, gy:18, ox:0, oy:0};
+const potsRect = Array.from({length:12},()=>({x:0,y:0,w:0,h:0}));
 
-const QUEST_POOL_DAILY=[["Посади семена",12,"plants",24],["Собери витграсс",10,"harvests",40],["Продай сок",6,"sell_juice",36],["Полей горшки",16,"waters",22]];
-const QUEST_POOL_WEEK=[["Собери стаканы сока",40,"sell_juice",140],["Собери урожаи",50,"harvests",120],["Полей горшки",100,"waters",80]];
-function genQuests(pool,seed,count){
-  const rnd=seededRandom(seed), src=[...pool], pick=[];
-  while(pick.length<count&&src.length){ pick.push(src.splice(Math.floor(rnd()*src.length),1)[0]); }
-  return pick.map(([n,need,k,rw])=>({name:n,need,key:k,done:0,reward:rw,claimed:false}));
-}
-function ensureDaily(s){
-  if(s.quests_date!==todayKey()){
-    const seedNum = parseInt(todayKey().replace(/-/g,''),10) || 20250101;
-    s.quests=genQuests(QUEST_POOL_DAILY, seedNum, 3);
-    s.quests_date=todayKey();
-  }
-}
-function ensureWeekly(s){
-  const wk=weekKey();
-  if(s.weekly_key!==wk){
-    const seedNum = parseInt(wk.replace('W',''),10) || 202501;
-    s.weekly=genQuests(QUEST_POOL_WEEK, seedNum, 2);
-    s.weekly_key=wk;
-  }
-}
-
-function questEvent(s,kind){
-  let changed=false;
-  for(const q of s.quests){
-    if(q.key===kind && !q.claimed){
-      q.done=Math.min(q.need,q.done+1);
-      if(q.done>=q.need && !q.claimed){
-        toast(`Дейлик готов! +${q.reward} мон.`);
-        q.claimed=true; s.coins+=q.reward; changed=true;
-      }
-    }
-  }
-  for(const q of s.weekly){
-    if(q.key===kind && !q.claimed){
-      q.done=Math.min(q.need,q.done+1);
-      if(q.done>=q.need && !q.claimed){
-        toast(`Еженедельный готов! +${q.reward} мон.`);
-        q.claimed=true; s.coins+=q.reward; changed=true;
-      }
-    }
-  }
-  if(changed){
-    achEvent();
-    refreshSidebar(false,true,true);
-  }
-}
-
-/* =============== Achievements =============== */
-const ACH_POOL=[
-  {id:'first_seed', name:'Первый посев', desc:'Посади 1 семечко', key:'plants', target:1, reward:10},
-  {id:'first_harv', name:'Первый урожай', desc:'Собери 1 урожай', key:'harvests', target:1, reward:12},
-  {id:'juicer',     name:'Соковыжималка', desc:'Продай 10 стаканов сока', key:'sell_juice', target:10, reward:40},
-  {id:'watering',   name:'Гидратор', desc:'Полей 50 раз', key:'waters', target:50, reward:60},
-  {id:'farmer10',   name:'Фермер-десять', desc:'Собери 10 урожаев', key:'harvests', target:10, reward:50},
-  {id:'wealth',     name:'Первый капитал', desc:'Накопи 200 монет', key:'coins', target:200, reward:50, type:'value'},
-  {id:'lamps3',     name:'Свет по расписанию', desc:'Купи 3 лампы', key:'lamps', target:3, reward:70, type:'value'},
-  {id:'level4',     name:'4 уровень', desc:'Достигни 4 уровня фермы', key:'level', target:4, reward:80, type:'value'},
-  {id:'level6',     name:'6 уровень', desc:'Достигни 6 уровня фермы', key:'level', target:6, reward:120, type:'value'},
-  {id:'rich',       name:'Богатый травник', desc:'Накопи 600 монет', key:'coins', target:600, reward:120, type:'value'},
-];
-function achEvent(){
-  let changed=false;
-  for(const a of ACH_POOL){
-    const st=state.achievements[a.id]||{progress:0,done:false,claimed:false};
-    if(st.done && st.claimed){ state.achievements[a.id]=st; continue; }
-    const val = a.type==='value'
-      ? (a.key==='coins'?state.coins:(a.key==='lamps'?state.lamps:(a.key==='level'?state.level:0)))
-      : (state.stats[a.key]||0);
-    st.progress=Math.max(st.progress,val);
-    if(!st.done && st.progress>=a.target){
-      st.done=true;
-      if(!st.claimed){
-        state.coins+=a.reward;
-        toast(`Достижение: «${a.name}»  +${a.reward} мон.`);
-      }
-      st.claimed=true;
-      changed=true;
-    }
-    state.achievements[a.id]=st;
-  }
-  if(changed) refreshSidebar(false,false,true);
-}
-
-/* =============== Level / XP =============== */
-function levelReq(level){ return 30 + (level-1)*20; }
-function getUnlocksForLevel(lvl){
-  const seeds = SEED_TYPES.filter(t=>t.unlock===lvl).map(t=>t.name);
-  return {seeds};
-}
-function addXP(amount){
-  state.xp += amount;
-  let gained=0;
-  const allUnlocks={seeds:[]};
-  while(state.xp>=levelReq(state.level)){
-    state.xp -= levelReq(state.level);
-    state.level += 1;
-    const u=getUnlocksForLevel(state.level);
-    allUnlocks.seeds.push(...u.seeds);
-    gained++;
-  }
-  if(gained>0){
-    refreshSidebar(true,true,true);
-    showLevelUp(state.level, allUnlocks);
-  }
-  achEvent();
-  updateLevelBar();
-}
-
-/* =============== Audio =============== */
-let audioCtx=null;
-function ensureAudio(){
-  if(!audioCtx && !state.settings.muted){
-    try{ audioCtx=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ console.warn("Audio not supported",e); }
-  }
-}
-function beep(freq=880,sec=.12,vol=.35){
-  if(state.settings.muted || !audioCtx) return;
-  const t0=audioCtx.currentTime;
-  const osc=audioCtx.createOscillator(); const g=audioCtx.createGain();
-  osc.type="sine"; osc.frequency.value=freq;
-  g.gain.setValueAtTime(0,t0); g.gain.linearRampToValueAtTime(vol,t0+.01); g.gain.exponentialRampToValueAtTime(0.0001,t0+sec);
-  osc.connect(g).connect(audioCtx.destination); osc.start(t0); osc.stop(t0+sec+.02);
-}
-const SFX={ plant:()=>beep(660,.09,.28), water:()=>beep(520,.11,.25), harv:()=>beep(920,.12,.32), buy:()=>beep(480,.09,.25), err:()=>beep(220,.16,.28) };
-
-/* =============== Canvas / Layout =============== */
-const canvas=document.getElementById("game"); const wrap=document.getElementById("gamewrap"); const ctx=canvas.getContext("2d");
-let DPR=(window.devicePixelRatio||1);
-let layout={w:1200,h:720,margin:16,cols:3,rows:4,potW:120,potH:120,gapX:18,gapY:22,offsetX:0,offsetY:0,gridLeft:0,gridTop:0,gridW:0,gridH:0};
-let potRects=Array.from({length:12},()=>({x:0,y:0,w:0,h:0}));
-let cachedLeaf=null;
-
-/* устойчивое измерение враппера */
-function measureWrap(){
-  const r = wrap.getBoundingClientRect();
-  return { w: Math.max(1, Math.round(r.width)), h: Math.max(1, Math.round(r.height)) };
-}
-
-/* НОВЫЙ подбор кол-ва колонок и размера горшка — всегда помещаем 12 штук */
-function rebuildLayout(w,h){
-  layout.w=w; layout.h=h;
-  layout.margin=Math.max(8,Math.floor(w*0.014));
-  layout.gridLeft=layout.margin; layout.gridTop=Math.floor(layout.margin*1.4);
-  layout.gridW=w-layout.margin*2; layout.gridH=h-layout.gridTop-Math.floor(layout.margin*0.8);
-
-  let best=null;
-  const MIN_SIZE = 30; // можно ужиматься до 30px в ландшафте
-  for(let cols=2; cols<=6; cols++){
-    const rows=Math.ceil(12/cols);
-    // делаем маленькие зазоры, чтобы не съедали высоту
-    const gapX = Math.max(6, Math.floor(layout.gridW*0.012));
-    const gapY = Math.max(6, Math.floor(layout.gridH*0.025));
-    const sizeW = Math.floor((layout.gridW - gapX*(cols-1))/cols);
-    const sizeH = Math.floor((layout.gridH - gapY*(rows-1))/rows);
-    const size = Math.min(sizeW, sizeH);
-    if(size < MIN_SIZE) continue;
-    if(!best || size>best.size) best={size,cols,rows,gapX,gapY};
-  }
-  // если совсем мало места — берём минимально возможное
-  if(!best){
-    // пробуем максимальные колонки, чтобы сделать горшки помельче
-    const cols=6, rows=Math.ceil(12/6);
-    const gapX=6, gapY=6;
-    const size=Math.max(18, Math.min(
-      Math.floor((layout.gridW - gapX*(cols-1))/cols),
-      Math.floor((layout.gridH - gapY*(rows-1))/rows)
-    ));
-    best={size,cols,rows,gapX,gapY};
-  }
-
-  const {size,cols,rows,gapX,gapY}=best;
-  layout.cols=cols; layout.rows=rows; layout.potW=layout.potH=size; layout.gapX=gapX; layout.gapY=gapY;
-  const totalW=size*cols+gapX*(cols-1), totalH=size*rows+gapY*(rows-1);
-  layout.offsetX=layout.gridLeft+Math.max(0,Math.floor((layout.gridW-totalW)/2));
-  layout.offsetY=layout.gridTop +Math.max(0,Math.floor((layout.gridH-totalH)/2));
-  for(let i=0;i<12;i++){
-    const r=Math.floor(i/cols), c=i%cols;
-    const x=layout.offsetX + c*(size+gapX);
-    const y=layout.offsetY + r*(size+gapY);
-    potRects[i]={x,y,w:size,h:size};
-  }
-}
-
-function resizeCanvas(){
-  DPR=(window.devicePixelRatio||1);
-  const {w,h}=measureWrap();
-  canvas.width=Math.max(1,Math.floor(w*DPR));
-  canvas.height=Math.max(1,Math.floor(h*DPR));
-  canvas.style.width=w+"px"; canvas.style.height=h+"px";
+function resize(){
+  DPR = window.devicePixelRatio||1;
+  const r=wrap.getBoundingClientRect();
+  cvs.width=r.width*DPR; cvs.height=r.height*DPR; cvs.style.width=r.width+"px"; cvs.style.height=r.height+"px";
   ctx.setTransform(DPR,0,0,DPR,0,0);
-  rebuildLayout(w,h);
-  if(!cachedLeaf) cachedLeaf=makeLeaf(Math.max(18,Math.floor(Math.min(w,h)*0.02)));
-}
+  L.w=r.width; L.h=r.height;
 
-function makeLeaf(px){
-  const c=document.createElement("canvas"); c.width=px; c.height=px; const g=c.getContext("2d");
-  g.strokeStyle="rgba(20,100,60,0.22)"; g.lineWidth=Math.max(2,px/14);
-  g.beginPath(); g.moveTo(px*.5,px*.92); g.lineTo(px*.5,px*.3); g.stroke();
-  g.beginPath(); g.ellipse(px*.56,px*.27,px*.14,px*.09,0,0,Math.PI*2); g.stroke();
-  g.beginPath(); g.ellipse(px*.40,px*.32,px*.11,px*.07,0,0,Math.PI*2); g.stroke();
-  return c;
-}
-function drawBG(){
-  const g=ctx.createLinearGradient(0,0,0,layout.h);
-  g.addColorStop(0,"#ebf6ef"); g.addColorStop(1,"#d6ebdd");
-  ctx.fillStyle=g; ctx.fillRect(0,0,layout.w,layout.h);
-  const leaf=cachedLeaf; if(leaf){
-    const stepX=leaf.width+28, stepY=leaf.height+22;
-    for(let yy=0; yy<layout.h; yy+=stepY){
-      const off=((yy/stepY)|0)%2 ? Math.floor(stepX/2) : 0;
-      for(let xx=-off; xx<layout.w; xx+=stepX){ ctx.globalAlpha=0.09; ctx.drawImage(leaf,xx,yy); }
-    }
-    ctx.globalAlpha=1;
+  L.cols=3; L.rows=4;
+  L.pw = Math.floor((L.w-32 - 24)/3);
+  L.ph = Math.floor((L.h-48 - 36)/4);
+  L.gx=12; L.gy=10; L.ox=16; L.oy=16;
+
+  for(let i=0;i<12;i++){
+    const r=Math.floor(i/3), c=i%3;
+    potsRect[i]={x:L.ox + c*(L.pw+L.gx), y:L.oy + r*(L.ph+L.gy), w:L.pw, h:L.ph};
   }
 }
-function roundRect(x,y,w,h,r,fill,stroke){
-  const rr=Math.min(r,w/2,h/2);
-  ctx.beginPath();
-  ctx.moveTo(x+rr,y);
-  ctx.arcTo(x+w,y,x+w,y+h,rr);
-  ctx.arcTo(x+w,y+h,x,y+h,rr);
-  ctx.arcTo(x,y+h,x,y,rr);
-  ctx.arcTo(x,y,x+w,y,rr);
-  if(fill){ ctx.fill(); }
-  if(stroke){ ctx.stroke(); }
-}
-function rgb([r,g,b]){ return `rgb(${r},${g},${b})`; }
-function tint([r,g,b],k){ return [Math.floor(r*k),Math.floor(g*k),Math.floor(b*k)]; }
+window.addEventListener('resize', resize);
+
+/* =================== DRAW =================== */
+function rr(x,y,w,h,r){ const a=Math.min(r,w/2,h/2); ctx.beginPath();
+  ctx.moveTo(x+a,y); ctx.arcTo(x+w,y,x+w,y+h,a); ctx.arcTo(x+w,y+h,x,y+h,a);
+  ctx.arcTo(x,y+h,x,y,a); ctx.arcTo(x,y,x+w,y,a); ctx.closePath(); }
+function rgb(a){ return `rgb(${a[0]},${a[1]},${a[2]})`; }
+function tint(c,k){ return [c[0]*k|0,c[1]*k|0,c[2]*k|0]; }
+
 function drawShelves(){
-  const shelfH=Math.max(6,Math.floor(layout.potH/14));
-  const under =Math.max(4, Math.floor(layout.potH/18));
-  const totalW=layout.cols*layout.potW + (layout.cols-1)*layout.gapX;
-  ctx.fillStyle="#dce6dc";
-  for(let r=0;r<layout.rows;r++){
-    const y=layout.offsetY + r*(layout.potH+layout.gapY) + layout.potH + under;
-    ctx.fillRect(layout.offsetX-12,y,totalW+24,shelfH);
+  // стойки
+  ctx.fillStyle="#0f657d"; rr(L.ox-14,L.oy-10,10,L.h-(L.oy-10)*2,10); ctx.fill();
+  rr(L.w-L.ox+4,L.oy-10,10,L.h-(L.oy-10)*2,10); ctx.fill();
+
+  for(let r=0;r<4;r++){
+    const y=potsRect[r*3].y + L.ph + 8;
+    ctx.fillStyle="#0b5570"; rr(L.ox-8,y,L.w-L.ox*2+16,10,6); ctx.fill();
+    ctx.fillStyle="#1aa3c9"; rr(L.ox-6,y-4,L.w-L.ox*2+12,10,6); ctx.fill();
   }
 }
-function drawPots(){
-  for(let i=0;i<12;i++){
-    const p=state.pots[i], r=potRects[i];
-    ctx.fillStyle="#966e50"; roundRect(r.x,r.y,r.w,r.h,10,true,false);
-    ctx.fillStyle="#78543c"; roundRect(r.x,r.y,r.w,Math.max(12,Math.floor(r.h/6)),10,true,false);
-    const soil={x:r.x+Math.floor(r.w*.07), y:r.y+Math.floor(r.h*.2), w:r.w-Math.floor(r.w*.14), h:r.h-Math.floor(r.h*.26)};
-    ctx.fillStyle="rgb(95,70,55)"; roundRect(soil.x,soil.y,soil.w,soil.h,8,true,false);
-    const waterY=r.y+r.h - Math.max(4,Math.floor(r.h/18));
-    const mw=Math.floor(soil.w * p.moisture);
-    ctx.fillStyle="#5082c8"; roundRect(soil.x,waterY,mw,Math.max(4,Math.floor(r.h/24)),3,true,false);
 
-    if(p.has_seed){
-      const st=SEED_TYPES[p.seed_type]; const base=[...st.color];
-      const cx=r.x+Math.floor(r.w/2); const baseY=waterY;
-      let height,color,blades;
-      if(p.stage===SEEDED){ height=Math.max(8,Math.floor(r.h/9)); color=tint(base,0.95); blades=2; }
-      else if(p.stage===SPROUT){ height=Math.max(16,Math.floor(r.h/4)); color=base; blades=5; }
-      else if(p.stage===GROWTH){ height=Math.max(26,Math.floor(r.h/2.7)); color=tint(base,0.95); blades=8; }
-      else if(p.stage===MATURE){ height=Math.max(34,Math.floor(r.h/2)); color=base; blades=9; }
-      else { height=Math.max(30,Math.floor(r.h/2.3)); color=tint(base,0.75); blades=9; }
-      const step=Math.max(3,Math.floor(r.w/18));
-      ctx.strokeStyle=rgb(color); ctx.lineWidth=Math.max(1,Math.floor(r.w/60));
-      for(let k=0;k<blades;k++){
-        const x=cx + (k-(blades/2|0))*step;
-        const wob=Math.sin((performance.now()/270)+k)*2;
-        ctx.beginPath(); ctx.moveTo(x,baseY); ctx.lineTo(x,baseY - height - ((k%3)*2) + wob); ctx.stroke();
-      }
-      const badgeR=Math.max(7,Math.floor(r.w/10));
-      if(p.stage===MATURE){
-        ctx.fillStyle="#4eac60"; ctx.beginPath(); ctx.arc(r.x+r.w-badgeR, r.y+badgeR, badgeR, 0, Math.PI*2); ctx.fill();
-      }else if(p.stage===OVERGROWN){
-        ctx.fillStyle="#e68c46"; ctx.beginPath(); ctx.arc(r.x+r.w-badgeR, r.y+badgeR, badgeR, 0, Math.PI*2); ctx.fill();
-      }
+function drawLampBars(R,count){
+  if(count<=0) return;
+  const w=18, h=6, gap=8;
+  const total = count*w + (count-1)*gap;
+  let x = R.x + (R.w-total)/2;
+  const y = R.y - 6; // над поддоном
+  for(let i=0;i<count;i++){
+    rr(x,y,w,h,4); ctx.fillStyle="#ff917a"; ctx.fill();
+    ctx.shadowColor="#ff6f6f"; ctx.shadowBlur=10; ctx.fillStyle="rgba(255,160,130,.35)";
+    rr(x-2,y-4,w+4,h+8,6); ctx.fill(); ctx.shadowBlur=0;
+    x += w+gap;
+  }
+}
+
+function drawPot(i){
+  const P=S.pots[i], R=potsRect[i];
+
+  // лампы (над поддоном)
+  drawLampBars(R, P.lamps);
+
+  // поддон
+  ctx.save();
+  rr(R.x, R.y+8, R.w, R.h-8, 16); ctx.fillStyle="#0c4052"; ctx.fill();
+  rr(R.x+8, R.y+20, R.w-16, R.h-30, 14); ctx.fillStyle="#0a2631"; ctx.fill();
+
+  // влажность
+  const mw = Math.max(4, Math.floor((R.w-24) * (P.moist||0)));
+  rr(R.x+12, R.y+R.h-22, mw, 10, 6); ctx.fillStyle="#2dd1ff"; ctx.fill();
+
+  // растения
+  if(P.has){
+    const seed=SEEDS[P.seed], base=[...seed.color];
+    let blades=6, h=Math.floor(R.h*0.45);
+    if(P.stage===SEEDED){ blades=2; h=R.h*0.18; }
+    else if(P.stage===SPROUT){ blades=4; h=R.h*0.30; }
+    else if(P.stage===GROWTH){ blades=7; h=R.h*0.42; }
+    else if(P.stage===MATURE){ blades=9; h=R.h*0.50; }
+    else if(P.stage===OVERGROWN){ blades=9; h=R.h*0.46; base=tint(base,.75); }
+
+    ctx.lineWidth=2; ctx.strokeStyle=rgb(base);
+    const baseY=R.y+R.h-28, step=Math.max(4,Math.floor(R.w/(blades+3)));
+    for(let k=0;k<blades;k++){
+      const x=R.x+18+k*step;
+      const wob=Math.sin((performance.now()/300)+(i*2)+k)*2;
+      ctx.beginPath(); ctx.moveTo(x,baseY); ctx.lineTo(x, baseY - h + ((k%3)*-3) + wob); ctx.stroke();
     }
-    if(p.cut_flash>0){ ctx.globalAlpha=Math.min(1,(p.cut_flash/0.18)*0.6); ctx.fillStyle="#fff"; ctx.fillRect(r.x,r.y,r.w,r.h); ctx.globalAlpha=1; }
-    ctx.strokeStyle="rgba(0,0,0,0.1)"; ctx.lineWidth=2; roundRect(r.x,r.y,r.w,r.h,10,false,true);
-  }
-}
 
-/* =============== Game loop =============== */
-let activeTool=TOOL_SEED, activeSeedIdx=0, awAcc=0;
-function potSpeed(p){ const st=SEED_TYPES[p.seed_type]; return st.speed * (1+state.lamps*LAMP_GROWTH_BONUS) * (1+p.moisture) * (p.fert_time_left>0?1.35:1); }
-function update(dt){
-  ensureDaily(state); ensureWeekly(state);
-  state.stats.play_seconds += dt;
-
-  if(state.autowater){ awAcc+=dt; if(awAcc>=AUTOWATER_TICK){ awAcc=0; for(const p of state.pots) if(p.has_seed) p.moisture=Math.min(1,p.moisture+AUTOWATER_AMOUNT); } }
-  for(const p of state.pots){
-    p.moisture=Math.max(0,p.moisture - dt*0.02);
-    if(p.fert_time_left>0) p.fert_time_left=Math.max(0,p.fert_time_left-dt);
-    if(p.cut_flash>0) p.cut_flash=Math.max(0,p.cut_flash-dt);
-    if(!p.has_seed) continue;
-    p.stage_time+=dt*potSpeed(p);
-    const target=STAGE_TIMERS[p.stage];
-    if(p.stage<=GROWTH){ if(p.stage_time>=target){ p.stage+=1; p.stage_time=0; } }
-    else if(p.stage===MATURE && p.stage_time>=target){ p.stage=OVERGROWN; p.stage_time=0; }
-  }
-}
-let last=performance.now();
-function loop(now){
-  const dt=Math.min(.1,(now-last)/1000); last=now;
-  update(dt);
-  drawBG(); drawShelves(); drawPots();
-  requestAnimationFrame(loop);
-}
-
-/* =============== Input =============== */
-const canvasEl = document.getElementById("game");
-canvasEl.addEventListener("pointerdown",(e)=>{
-  const rect=canvasEl.getBoundingClientRect();
-  const mx=e.clientX-rect.left, my=e.clientY-rect.top;
-  for(let i=0;i<12;i++){
-    const r=potRects[i]; if(mx>=r.x&&mx<=r.x+r.w&&my>=r.y&&my<=r.y+r.h){
-      const p=state.pots[i];
-      if(activeTool===TOOL_SEED){
-        const sid=SEED_TYPES[activeSeedIdx].id;
-        if(!p.has_seed && state.seed_stock[sid]>0 && state.level>=SEED_TYPES[activeSeedIdx].unlock){
-          p.has_seed=true; p.seed_type=activeSeedIdx; p.stage=SEEDED; p.stage_time=0; p.moisture=.4; p.cut_flash=0;
-          state.seed_stock[sid]--; state.stats.plants=(state.stats.plants||0)+1; questEvent(state,"plants"); addXP(2); SFX.plant();
-          tutorAdvance('seed');
-          refreshSidebar(false,true,false);
-        }else SFX.err();
-      }else if(activeTool===TOOL_WATER){
-        if(p.has_seed){ p.moisture=Math.min(1,p.moisture+.6); state.stats.waters=(state.stats.waters||0)+1; questEvent(state,"waters"); addXP(1); SFX.water(); tutorAdvance('water'); }
-        else SFX.err();
-      }else if(activeTool===TOOL_HARVEST){
-        if(p.stage===MATURE || p.stage===OVERGROWN){
-          const st=SEED_TYPES[p.seed_type]; const got=(p.stage===MATURE?st.ym:st.yo)|0;
-          p.has_seed=false; p.stage=SEEDED; p.stage_time=0; p.moisture=0; p.fert_time_left=0; p.cut_flash=.18;
-          if(got>0){ state.grass+=got; state.stats.harvests=(state.stats.harvests||0)+1; questEvent(state,"harvests"); addXP(4); SFX.harv(); tutorAdvance('cut'); refreshSidebar(false,true,false); }
-        }else SFX.err();
-      }else if(activeTool===TOOL_FERT){
-        if(p.has_seed && state.fert>0){ p.fert_time_left+=120; state.fert--; SFX.buy(); refreshSidebar(false,true,false); }
-        else SFX.err();
-      }
-      achEvent();
-      break;
+    // индикатор зрелости
+    if(P.stage===MATURE || P.stage===OVERGROWN){
+      ctx.fillStyle = P.stage===MATURE ? "#38e27b" : "#ffb35e";
+      ctx.beginPath(); ctx.arc(R.x+R.w-14, R.y+18, 8, 0, Math.PI*2); ctx.fill();
     }
   }
-});
-window.addEventListener("keydown",(e)=>{
-  let seedChanged=false;
-  if(e.key==="1") activeTool=TOOL_SEED;
-  else if(e.key==="2") activeTool=TOOL_WATER;
-  else if(e.key==="3") activeTool=TOOL_HARVEST;
-  else if(e.key==="4") activeTool=TOOL_FERT;
-  else if(e.key==="ArrowLeft" && activeTool===TOOL_SEED){ activeSeedIdx=(activeSeedIdx-1+SEED_TYPES.length)%SEED_TYPES.length; seedChanged=true; }
-  else if(e.key==="ArrowRight" && activeTool===TOOL_SEED){ activeSeedIdx=(activeSeedIdx+1)%SEED_TYPES.length; seedChanged=true; }
-  else if(e.key.toLowerCase()==="s"){ if(state.settings.autosave) toast("Автосейв включён"); else saveState(); }
-  else if(e.key.toLowerCase()==="l"){ if(loadState()) refreshSidebar(true,true,true); }
-  else if(e.key.toLowerCase()==="r"){ resetGame(); refreshSidebar(true,true,true); openStart(false); }
-  syncToolUI();
-  refreshSidebar(seedChanged, true, false);
-});
 
-/* =============== Sidebar / UI =============== */
-const statsDiv=document.getElementById("stats");
-const toolIcoP=document.getElementById("tool-ico");
-const toolName=document.getElementById("tool-name");
-const seedSel=document.getElementById("seedSelector");
-const tabShop=document.getElementById("tab-shop");
-const tabQuests=document.getElementById("tab-quests");
-const tabAch=document.getElementById("tab-ach");
-const lvlSpan=document.getElementById("lvl");
-const xpFill=document.getElementById("xpFill");
-const xpText=document.getElementById("xpText");
-const toolSelect=document.getElementById('toolSelect');
+  if(P.flash>0){ ctx.globalAlpha=Math.min(.6,P.flash/.18); ctx.fillStyle="#fff"; rr(R.x,R.y,R.w,R.h,16); ctx.fill(); ctx.globalAlpha=1; }
+  ctx.restore();
+}
 
-function openTab(which){
-  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.tab===which));
-  tabShop.style.display   = which==='shop'?'':'none';
-  tabQuests.style.display = which==='quests'?'':'none';
-  tabAch.style.display    = which==='ach'?'':'none';
-}
-document.querySelectorAll('.tab').forEach(el=>{ el.onclick=()=>openTab(el.dataset.tab); });
+function draw(){
+  const g=ctx.createLinearGradient(0,0,0,L.h); g.addColorStop(0,"#0f3441"); g.addColorStop(1,"#0a2631");
+  ctx.fillStyle=g; ctx.fillRect(0,0,L.w,L.h);
 
-function updateLevelBar(){
-  lvlSpan.textContent = state.level;
-  const need = levelReq(state.level);
-  xpFill.style.width = `${Math.min(99, (state.xp/need)*100)}%`;
-  xpText.textContent = `${(need-state.xp)|0} XP`;
+  drawShelves();
+  for(let i=0;i<12;i++) drawPot(i);
 }
-function sumSeeds(stock){ return SEED_TYPES.reduce((a,t)=>a+(stock[t.id]||0),0); }
-function buildSeedChips(){
-  seedSel.innerHTML="";
-  SEED_TYPES.forEach((t,i)=>{
-    const unlocked = state.level>=t.unlock;
-    const chip=document.createElement("div");
-    chip.className="chip"+(i===activeSeedIdx?" active":"");
-    chip.textContent=`${t.name} [${state.seed_stock[t.id]}]${!unlocked?' 🔒':''}`;
-    chip.style.opacity = unlocked?1:0.5;
-    chip.addEventListener("click",()=>{ 
-      if(unlocked){ activeSeedIdx=i; refreshSidebar(true,false,false); }
-      else toast(`Откроется на уровне ${t.unlock}`);
-    });
-    seedSel.appendChild(chip);
-  });
+
+/* =================== GAME LOGIC =================== */
+function levelReq(l){ return 30+(l-1)*20; }
+function addXP(v){
+  S.xp+=v; let up=0;
+  while(S.xp>=levelReq(S.level)){ S.xp-=levelReq(S.level); S.level++; up++; }
+  if(up>0) toast(`Новый уровень: ${S.level}!`);
+  syncHUD();
 }
-function buildShop(){
-  tabShop.innerHTML="";
-  function button(label,icon,fn,disabled=false,hint=""){
-    const b=document.createElement("button"); b.className="btn";
-    if(disabled){ b.style.opacity=.6; b.style.pointerEvents='none'; }
-    b.appendChild(ICONS[icon].cloneNode(true)); b.append(" "+label);
-    if(hint){ const s=document.createElement("div"); s.style.fontSize='12px'; s.style.color='var(--ink2)'; s.textContent=hint; b.appendChild(s); }
-    b.onclick=fn; tabShop.appendChild(b);
-  }
-  for(const t of SEED_TYPES){
-    const locked = state.level<t.unlock;
-    button(`Купить семена: ${t.name} (+${t.pack}) — ${t.price}`, "seed",
-      ()=>{ if(state.coins>=t.price){ state.coins-=t.price; state.seed_stock[t.id]+=t.pack; SFX.buy(); refreshSidebar(false,true,false);} else SFX.err(); },
-      locked, locked?`Откроется на уровне ${t.unlock}`:"");
-  }
-  button(`Сделать сок (−1 трава, +1)`,"juice",()=>{ if(state.grass>=1){ state.grass--; state.juice++; SFX.buy(); refreshSidebar(false,true,false);} else SFX.err(); });
-  button(`Продать сок (+${JUICE_PRICE} мон.)`,"coin",()=>{
-    if(state.juice>=1){ state.juice--; state.coins+=JUICE_PRICE; state.stats.sell_juice=(state.stats.sell_juice||0)+1; questEvent(state,"sell_juice"); addXP(2); SFX.buy(); tutorAdvance('sell'); refreshSidebar(false,true,false); }
-    else SFX.err();
-  });
-  button(`Купить лампу (+10%) — ${LAMP_PRICE}`,"lamp",()=>{ if(state.coins>=LAMP_PRICE){ state.coins-=LAMP_PRICE; state.lamps++; SFX.buy(); achEvent(); refreshSidebar(false,true,false);} else SFX.err(); });
-  button(`Купить удобрение (+1) — 12`,"fert",()=>{ if(state.coins>=12){ state.coins-=12; state.fert++; SFX.buy(); refreshSidebar(false,true,false);} else SFX.err(); });
-  button(`Автополив — ${state.autowater?"УЖЕ ЕСТЬ":"120 мон."}`,"water",()=>{ if(state.autowater) SFX.err(); else if(state.coins>=AUTOWATER_PRICE){ state.coins-=AUTOWATER_PRICE; state.autowater=true; SFX.buy(); refreshSidebar(false,true,false);} else SFX.err(); });
-  button(`Сохранить (S) / Загрузить (L)`,"save",()=>{ if(state.settings.autosave){ toast('Автосейв включён'); } else { saveState(); toast('Сохранено'); } });
-  button(`Новая игра (R)`,"reset",()=>{ resetGame(); refreshSidebar(true,true,true); openStart(false); });
+
+function perLampBonus(n){ return 1 - Math.pow(1-PER_LAMP, Math.min(3,n|0)); }
+function potSpeed(P){
+  const base = SEEDS[P.seed].speed;
+  const moist = 1 + P.moist*0.8;
+  const fert = P.fert>0 ? 1.35 : 1;
+  const lamp = 1 + perLampBonus(P.lamps);
+  return base * moist * fert * lamp;
 }
-function renderQuests(){
-  const dailyList=document.getElementById("dailyList");
-  const weeklyList=document.getElementById("weeklyList");
-  const qdate=document.getElementById("qdate");
-  const wdate=document.getElementById("wdate");
-  dailyList.innerHTML=""; weeklyList.innerHTML="";
-  for(const q of state.quests){
-    const div=document.createElement("div"); div.className="q "+(q.claimed?"done":"");
-    div.innerHTML=`• ${q.name} — ${q.done}/${q.need} (+${q.reward}) ${q.claimed?"✓":""}`;
-    dailyList.appendChild(div);
-  }
-  for(const q of state.weekly){
-    const div=document.createElement("div"); div.className="q "+(q.claimed?"done":"");
-    div.innerHTML=`• ${q.name} — ${q.done}/${q.need} (+${q.reward}) ${q.claimед?"✓":""}`;
-    weeklyList.appendChild(div);
-  }
-  qdate.textContent=`Обновление: ${state.quests_date}`;
-  wdate.textContent=`Неделя: ${state.weekly_key}`;
-}
-function renderAch(){
-  const box=document.getElementById("achList"); box.innerHTML="";
-  for(const a of ACH_POOL){
-    const st=state.achievements[a.id]||{progress:0,done:false,claimed:false};
-    const div=document.createElement("div"); div.className="q "+(st.claimed?"done":"");
-    const prog = Math.min(a.target, st.progress|0);
-    div.innerHTML = `• ${a.name} — ${prog}/${a.target} ${st.claimed?"✓":""}<div style="font-size:12px;color:var(--ink2)">${a.desc} • Награда: +${a.reward}</div>`;
-    box.appendChild(div);
+
+/* ===== Contracts (orders for juice) ===== */
+function maybeSpawnContract(dt){
+  if(S.contract){ S.contract.ttl -= dt; if(S.contract.ttl<=0){ S.contract=null; toast('Контракт истёк'); } return; }
+  S.nextContract -= dt;
+  if(S.nextContract<=0){
+    // новый заказ
+    const need = 4 + Math.floor(Math.random()*5); // 4..8
+    const price = 8 + Math.floor(Math.random()*3); // 8..10 за стакан
+    S.contract = {need, price, ttl: 45};          // действителен 45 сек
+    S.nextContract = 80 + Math.random()*40;       // 80..120 сек до следующего
+    showContract();
   }
 }
-function refreshSidebar(doChips=true, doLists=true, doAch=false){
-  const totalSeeds=sumSeeds(state.seed_stock);
-  statsDiv.innerHTML = `
-    <div class="row kv">${ICONS.coin.outerHTML}<div>Монеты: <b>${state.coins}</b></div></div>
-    <div class="row kv">${ICONS.seed.outerHTML}<div>Семена: <b>${totalSeeds}</b></div></div>
-    <div class="row kv" style="margin-top:-4px"><div style="opacity:.85">${SEED_TYPES.map(t=>`${t.name}: ${state.seed_stock[t.id]}`).join(" &nbsp;|&nbsp; ")}</div></div>
-    <div class="row kv">${ICONS.seed.outerHTML}<div>Витграсс: <b>${state.grass}</b></div></div>
-    <div class="row kv">${ICONS.juice.outerHTML}<div>Сок: <b>${state.juice}</b></div></div>
-    <div class="row kv">${ICONS.lamp.outerHTML}<div>Ламп: <b>${state.lamps}</b></div></div>
-    <div class="row kv">${ICONS.water.outerHTML}<div>Автополив: <b>${state.autowater?'есть':'нет'}</b></div></div>
-    <div class="row kv">${ICONS.fert.outerHTML}<div>Удобрение: <b>${state.fert}</b></div></div>
+function showContract(){
+  const body=document.getElementById('contractBody');
+  const c=S.contract; if(!c){ close('sheetContract'); return; }
+  body.innerHTML = `
+    <div class="row">
+      <div><b>Нужно: ${c.need} стаканов</b><br><small>Оплата: ${c.price} мон. за каждый</small></div>
+      <button id="btnAccept" class="primary">Отдать</button>
+    </div>
+    <div class="pill">В наличии: ${S.juice} • Время: <b id="ttl"></b></div>
   `;
-  const toolNames={[TOOL_SEED]:"Семена (1)",[TOOL_WATER]:"Лейка (2)",[TOOL_HARVEST]:"Ножницы (3)",[TOOL_FERT]:"Удобрение (4)"};
-  const toolIcons={[TOOL_SEED]:"seed",[TOOL_WATER]:"water",[TOOL_HARVEST]:"scissors",[TOOL_FERT]:"fert"};
-  const ico=ICONS[toolIcons[activeTool]].cloneNode(true); toolIcoP.replaceWith(ico); ico.id="tool-ico";
-  toolName.textContent=toolNames[activeTool];
-
-  if(doChips) buildSeedChips();
-  if(doLists){ buildShop(); renderQuests(); }
-  if(doAch){ renderAch(); }
-  updateLevelBar();
-  syncToolUI();
+  document.getElementById('btnAccept').disabled = S.juice < c.need;
+  document.getElementById('btnAccept').onclick = ()=>{
+    if(S.juice < c.need) { toast('Не хватает сока'); return; }
+    S.juice -= c.need; S.coins += c.need*c.price; S.contract=null; syncHUD(); save(); close('sheetContract'); toast('Контракт выполнен!');
+  };
+  open('sheetContract');
+}
+function updateContractTtlUI(){
+  if(!S.contract) return;
+  const el=document.getElementById('ttl'); if(el) el.textContent = Math.max(0, S.contract.ttl|0)+'s';
 }
 
-/* =============== Save/Load =============== */
-function saveState(){ try{ localStorage.setItem(SAVE_KEY,JSON.stringify(state)); if(state.settings.autosave) return; toast("Сохранено"); }catch(e){ console.warn("Save error",e); } }
-function loadState(){
-  try{
-    const raw=localStorage.getItem(SAVE_KEY); if(!raw) return false;
-    const data=JSON.parse(raw);
-    for(const t of SEED_TYPES){ if(!(t.id in data.seed_stock)) data.seed_stock[t.id]=0; }
-    if(!Array.isArray(data.pots)||data.pots.length!==12) data.pots=defaultState().pots;
-    state={...defaultState(),...data}; ensureDaily(state); ensureWeekly(state);
-    return true;
-  }catch(e){ console.warn("Load error",e); return false; }
+/* =================== LOOP =================== */
+let last=performance.now(), awAcc=0;
+function step(now){
+  const dt=Math.min(.1,(now-last)/1000); last=now;
+  S.stats.play += dt;
+
+  if(S.autowater){ awAcc+=dt; if(awAcc>=AUTOWATER_TICK){ awAcc=0; S.pots.forEach(P=>{ if(P.has) P.moist=Math.min(1,P.moist+AUTOWATER_AMOUNT); }); } }
+
+  for(const P of S.pots){
+    P.moist=Math.max(0,P.moist - dt*0.02);
+    if(P.fert>0) P.fert=Math.max(0,P.fert-dt);
+    if(P.flash>0) P.flash=Math.max(0,P.flash-dt);
+    if(!P.has) continue;
+    P.t += dt*potSpeed(P);
+    const target = STAGE_TIME[P.stage];
+    if(P.stage<=GROWTH){ if(P.t>=target){ P.stage++; P.t=0; } }
+    else if(P.stage===MATURE && P.t>=target){ P.stage=OVERGROWN; P.t=0; }
+  }
+
+  maybeSpawnContract(dt);
+  updateContractTtlUI();
+
+  draw();
+  requestAnimationFrame(step);
 }
-function resetGame(){ state=defaultState(); ensureDaily(state); ensureWeekly(state); try{localStorage.removeItem(SAVE_KEY);}catch{}; }
 
-/* =============== Start/Tutorial/Toast =============== */
-const overlay=document.getElementById('overlay');
-const btnCont=document.getElementById('btnContinue');
-const btnNew=document.getElementById('btnNew');
-const btnTutor=document.getElementById('btnTutor');
-const muteCbx=document.getElementById('mute');
-const autosaveCbx=document.getElementById('autosave');
-function openStart(){ overlay.style.display='flex'; btnCont.disabled = !localStorage.getItem(SAVE_KEY); muteCbx.checked = !!state.settings.muted; autosaveCbx.checked = !!state.settings.autosave; }
-function closeStart(){ overlay.style.display='none'; }
-btnCont.onclick=()=>{ if(loadState()){ refreshSidebar(true,true,true); closeStart(); toast('Прогресс загружен'); } };
-btnNew.onclick=()=>{ resetGame(); refreshSidebar(true,true,true); closeStart(); openTutor(); };
-btnTutor.onclick=()=>{ closeStart(); openTutor(); };
-muteCbx.onchange=(e)=>{ state.settings.muted = e.target.checked; if(state.settings.muted && audioCtx){ try{ audioCtx.close(); }catch{} audioCtx=null; } };
-autosaveCbx.onchange=(e)=>{ state.settings.autosave = e.target.checked; if(state.settings.autosave) saveState(); };
+/* =================== INPUT =================== */
+cvs.addEventListener('pointerdown',(e)=>{
+  const r=cvs.getBoundingClientRect(); const x=e.clientX-r.left, y=e.clientY-r.top;
+  for(let i=0;i<12;i++){
+    const R=potsRect[i]; if(x<R.x||x>R.x+R.w||y<R.y||y>R.y+R.h) continue;
+    const P=S.pots[i];
 
-const tutor=document.getElementById('tutor');
-const tTitle=document.getElementById('tTitle');
-const tText=document.getElementById('tText');
-const tNext=document.getElementById('tNext');
-let tStep=0;
-const steps=[
-  ["Посадка","Выбери инструмент «Семена (1)», нажми на любой горшок. Посади 1 семя.",'seed'],
-  ["Полив","Выбери «Лейка (2)» и полей посаженный горшок.",'water'],
-  ["Ожидание","Подожди, пока вырастет (или купи лампу в магазине для ускорения).",'wait'],
-  ["Срез","Выбери «Ножницы (3)» и собери урожай.",'cut'],
-  ["Сок","Нажми «Сделать сок», затем «Продать сок». Готово!",'sell'],
+    // Установка лампы, если в апгрейдах включён режим установки
+    if(placeLampMode){
+      if(S.lampStock<=0){ toast('Нет ламп на складе'); break; }
+      if(P.lamps>=3){ toast('Максимум 3 лампы'); break; }
+      P.lamps++; S.lampStock--; toast('Лампа установлена'); save(); draw(); syncHUD(); break;
+    }
+
+    // Fertilizer Mode
+    if(FERT_MODE && P.has){
+      if(S.fert<=0){ toast('Нет удобрений'); break; }
+      P.fert += FERT_DURATION; S.fert--; toast('Удобрение применено (+35% на 120с)'); syncHUD(); save(); break;
+    }
+
+    // Контекстные действия
+    if(!P.has){
+      const st=S.seeds[S.selSeed]; if((st|0)===0){ toast("Нет семян выбранного типа"); break; }
+      const idx=SEEDS.findIndex(s=>s.id===S.selSeed);
+      P.has=true; P.seed=idx; P.stage=SEEDED; P.t=0; P.moist=.4; P.fert=0; P.flash=0;
+      S.seeds[S.selSeed]--; S.stats.plants++; addXP(2);
+    }else if(P.stage===MATURE||P.stage===OVERGROWN){
+      const T=SEEDS[P.seed]; const add = (P.stage===MATURE?T.ym:T.yo)|0;
+      P.has=false; P.stage=SEEDED; P.t=0; P.moist=0; P.fert=0; P.flash=.18;
+      S.grass+=add; S.stats.harvests++; addXP(4);
+    }else{
+      P.moist=Math.min(1,P.moist+.6); S.stats.waters++; addXP(1);
+    }
+    syncHUD(); save(); break;
+  }
+});
+
+/* =================== UI / SHEETS =================== */
+function open(id){ document.getElementById(id).style.display='flex'; }
+function close(id){ document.getElementById(id).style.display='none'; }
+document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>close(b.dataset.close));
+document.getElementById('navShop').onclick = ()=>{ buildShop(); open('sheetShop'); };
+document.getElementById('navInv').onclick  = ()=>{ buildInv();  open('sheetInv');  };
+document.getElementById('navUpg').onclick  = ()=>{ buildUpg();  open('sheetUpg');  };
+document.getElementById('navQ').onclick    = ()=>{ buildQuests();open('sheetQ');   };
+document.getElementById('navMain').onclick = ()=> toast('Подсказка: тапни по горшку — действие контекстное');
+
+function syncHUD(){
+  document.getElementById('lv').textContent=S.level;
+  const need=levelReq(S.level); const p=Math.min(99,(S.xp/need)*100);
+  document.getElementById('xpFill').style.width=p+'%';
+  document.getElementById('xpText').textContent=(need-S.xp|0)+' XP to next';
+  document.getElementById('rGrass').textContent=S.grass;
+  document.getElementById('rJuice').textContent=S.juice;
+  document.getElementById('rCoins').textContent=S.coins;
+  const lab=document.getElementById('fertModeLabel'); if(lab) lab.textContent = FERT_MODE?'вкл':'выкл';
+}
+
+/* ---- Shop ---- */
+function buildShop(){
+  const box=document.getElementById('shopList'); box.innerHTML='';
+
+  // семена
+  SEEDS.forEach(s=>{
+    const locked = S.level < s.unlock;
+    const row = document.createElement('div'); row.className='row';
+    row.innerHTML = `<div><b>Семена: ${s.name}</b><br><small>+${s.pack} шт. • откроется на ур. ${s.unlock}</small></div>`;
+    const btn = document.createElement('button'); btn.className='primary';
+    btn.textContent = locked ? '🔒' : `${s.price} 🪙`;
+    btn.disabled = locked || S.coins < s.price;
+    btn.onclick=()=>{ if(S.coins<s.price) return; S.coins-=s.price; S.seeds[s.id]=(S.seeds[s.id]||0)+s.pack; syncHUD(); save(); buildInv(); buildShop(); toast('Куплены семена'); };
+    row.appendChild(btn); box.appendChild(row);
+  });
+
+  // удобрение (дорогое)
+  const rowF=document.createElement('div'); rowF.className='row';
+  rowF.innerHTML=`<div><b>Купить удобрение</b><br><small>+1 шт. • +35% роста на 120с (в Инвентаре включи режим)</small></div>`;
+  const bF=document.createElement('button'); bF.className='primary'; bF.textContent=`${FERT_PRICE} 🪙`;
+  bF.disabled = S.coins < FERT_PRICE;
+  bF.onclick=()=>{ if(S.coins<FERT_PRICE) return; S.coins-=FERT_PRICE; S.fert++; syncHUD(); save(); buildShop(); toast('+1 удобрение'); };
+  rowF.appendChild(bF); box.appendChild(rowF);
+
+  // Сок
+  const rowJ=document.createElement('div'); rowJ.className='row';
+  rowJ.innerHTML=`<div><b>Сделать сок</b><br><small>−1 трава → +1 стакан</small></div>`;
+  const bJ=document.createElement('button'); bJ.className='primary'; bJ.textContent='Сделать';
+  bJ.disabled = S.grass<1; bJ.onclick=()=>{ if(S.grass<1) return; S.grass--; S.juice++; syncHUD(); save(); buildShop(); toast('+1 стакан сока'); };
+  rowJ.appendChild(bJ); box.appendChild(rowJ);
+
+  const rowSell=document.createElement('div'); rowSell.className='row';
+  rowSell.innerHTML=`<div><b>Продать сок</b><br><small>+6 монет за стакан</small></div>`;
+  const bS=document.createElement('button'); bS.className='primary'; bS.textContent='+6 🪙';
+  bS.disabled = S.juice<1; bS.onclick=()=>{ if(S.juice<1) return; S.juice--; S.coins+=6; S.stats.sell++; addXP(2); syncHUD(); save(); buildShop(); toast('+6 монет'); };
+  rowSell.appendChild(bS); box.appendChild(rowSell);
+
+  // Контракт
+  const rowC=document.createElement('div'); rowC.className='row';
+  const c=S.contract;
+  if(c){
+    rowC.innerHTML=`<div><b>Текущий контракт</b><br><small>Нужно ${c.need}, оплата ${c.price}/шт, осталось <span id="ttl2">${c.ttl|0}s</span></small></div>`;
+    const bC=document.createElement('button'); bC.className='primary'; bC.textContent='Открыть';
+    bC.onclick=()=>showContract(); rowC.appendChild(bC);
+  }else{
+    rowC.innerHTML=`<div><b>Контрактов нет</b><br><small>Следующий примерно через ${S.nextContract|0}s</small></div>`;
+    const bC=document.createElement('button'); bC.className='primary'; bC.textContent='OK'; bC.disabled=true; rowC.appendChild(bC);
+  }
+  box.appendChild(rowC);
+}
+
+/* ---- Inventory ---- */
+function buildInv(){
+  const box=document.getElementById('invList'); box.innerHTML='';
+  SEEDS.forEach(s=>{
+    const row=document.createElement('div'); row.className='row';
+    row.innerHTML=`<div><b>${s.name}</b><br><small>${S.seeds[s.id]||0} шт.</small></div>`;
+    const a=document.createElement('button'); a.className='ghost'; a.textContent = (S.selSeed===s.id?'Выбрано':'Выбрать');
+    a.onclick=()=>{ S.selSeed=s.id; syncHUD(); buildInv(); };
+    row.appendChild(a); box.appendChild(row);
+  });
+
+  const rF=document.createElement('div'); rF.className='row';
+  rF.innerHTML=`<div><b>Удобрение</b><br><small>${S.fert} шт. • вкл/выкл режим применения</small></div>`;
+  const bT=document.createElement('button'); bT.className='primary'; bT.textContent= FERT_MODE?'Выключить':'Включить';
+  bT.onclick=()=>{ FERT_MODE=!FERT_MODE; syncHUD(); buildInv(); toast('Режим удобрения: '+(FERT_MODE?'вкл':'выкл')); };
+  rF.appendChild(bT); box.appendChild(rF);
+}
+
+/* ---- Upgrades (лампы и автополив) ---- */
+let placeLampMode=false;
+function buildUpg(){
+  const box=document.getElementById('upgList'); box.innerHTML='';
+
+  // купить лампу (фикс. цена)
+  const rowL=document.createElement('div'); rowL.className='row';
+  rowL.innerHTML=`<div><b>Купить лампу</b><br><small>Цена ${LAMP_COST} • На складе: ${S.lampStock}</small></div>`;
+  const bL=document.createElement('button'); bL.className='primary'; bL.textContent=`${LAMP_COST} 🪙`;
+  bL.disabled = S.coins<LAMP_COST;
+  bL.onclick=()=>{ if(S.coins<LAMP_COST) return; S.coins-=LAMP_COST; S.lampStock++; syncHUD(); save(); buildUpg(); toast('Лампа куплена'); };
+  rowL.appendChild(bL); box.appendChild(rowL);
+
+  // режим установки ламп
+  const rowSet=document.createElement('div'); rowSet.className='row';
+  rowSet.innerHTML=`<div><b>Установка лампы</b><br><small>Тапни по горшку, макс 3 на горшок</small></div>`;
+  const bSet=document.createElement('button'); bSet.className='primary'; bSet.textContent= placeLampMode?'Выкл':'Вкл';
+  bSet.onclick=()=>{ placeLampMode=!placeLampMode; toast('Режим установки ламп: '+(placeLampMode?'вкл':'выкл')); };
+  rowSet.appendChild(bSet); box.appendChild(rowSet);
+
+  // автополив
+  const rowA=document.createElement('div'); rowA.className='row';
+  rowA.innerHTML=`<div><b>Автополив</b><br><small>${S.autowater?'Активен (каждые 5с +18% влаги)':'Одноразовая покупка'}</small></div>`;
+  const bA=document.createElement('button'); bA.className='primary'; bA.textContent = S.autowater?'✓':'120 🪙';
+  bA.disabled = S.autowater || S.coins<120;
+  bA.onclick=()=>{ if(S.coins<120||S.autowater) return; S.coins-=120; S.autowater=true; syncHUD(); save(); buildUpg(); toast('Автополив включён'); };
+  rowA.appendChild(bA); box.appendChild(rowA);
+}
+
+/* ---- Quests (минимальный пул) ---- */
+const DAILY=[
+  {id:'plant',  name:'Посади 12 семян', key:'plants', need:12, reward:24},
+  {id:'water',  name:'Полей 16 раз',   key:'waters', need:16, reward:22},
+  {id:'harv',   name:'Собери 10 урожаев', key:'harvests', need:10, reward:40},
+  {id:'sell',   name:'Продай 6 стаканов', key:'sell', need:6, reward:36},
 ];
-function openTutor(){ tStep=0; tutor.style.display='flex'; renderTutor(); }
-function closeTutor(){ tutor.style.display='none'; toast('Обучение завершено!'); }
-tNext.onclick=()=>{ if(tStep<steps.length-1){ tStep++; renderTutor(); } else closeTutor(); };
-function renderTutor(){ tTitle.textContent=steps[tStep][0]; tText.textContent=steps[tStep][1]; }
-function tutorAdvance(flag){ const need=steps[tStep][2]; if(need===flag || (need==='wait' && flag==='cut')){ if(tStep<steps.length-1){ tStep++; renderTutor(); } } }
-
-const toastBox=document.getElementById('toast');
-function toast(text){ toastBox.textContent=text; toastBox.style.opacity=1; clearTimeout(toastBox._t); toastBox._t=setTimeout(()=>toastBox.style.opacity=0,1600); }
-
-/* =============== Level-Up Popup =============== */
-const levelup=document.getElementById('levelup');
-const luTitle=document.getElementById('luTitle');
-const luList=document.getElementById('luList');
-const luTip=document.getElementById('luTip');
-const luShop=document.getElementById('luShop');
-const luClose=document.getElementById('luClose');
-
-function showLevelUp(level, unlocks){
-  luTitle.textContent = `Новый уровень: ${level}!`;
-  luList.innerHTML = "";
-  const parts=[];
-  if(unlocks && unlocks.seeds && unlocks.seeds.length){
-    const p=document.createElement('div');
-    p.innerHTML = `<b>Открыты семена:</b> ${unlocks.seeds.join(", ")}`;
-    parts.push(p);
-  }
-  if(parts.length===0){
-    const p=document.createElement('div');
-    p.textContent="Новых предметов нет, но ферма становится эффективнее!";
-    parts.push(p);
-  }
-  parts.forEach(el=>luList.appendChild(el));
-  luTip.style.display = 'block';
-  luTip.textContent = 'Подсказка: загляни в «Магазин», чтобы купить новое.';
-  levelup.style.display='flex';
-}
-luClose.onclick=()=>{ levelup.style.display='none'; };
-luShop.onclick=()=>{ levelup.style.display='none'; openTab('shop'); };
-
-/* =============== Mobile tool select =============== */
-const toolSelectEl=document.getElementById('toolSelect');
-if(toolSelectEl){
-  toolSelectEl.addEventListener('change',(e)=>{
-    activeTool = Number(e.target.value)||TOOL_SEED;
-    refreshSidebar(false,false,false);
+function progressOf(k){ const v = S.stats[k]||0; const q=DAILY.find(x=>x.key===k); return {v, need:q.need, reward:q.reward, done:v>=q.need}; }
+function buildQuests(){
+  const box=document.getElementById('qList'); box.innerHTML='';
+  DAILY.forEach(q=>{
+    const st=progressOf(q.key);
+    const row=document.createElement('div'); row.className='row';
+    row.innerHTML=`<div><b>${q.name}</b><br><small>${Math.min(st.v,q.need)}/${q.need} • награда +${q.reward}🪙</small></div>`;
+    const b=document.createElement('button'); b.className='primary'; b.textContent= st.done? 'Забрать' : 'В процессе';
+    b.disabled=!st.done;
+    b.onclick=()=>{ if(!st.done) return; S.coins+=q.reward; const left=(S.stats[q.key]-q.need); S.stats[q.key]=Math.max(0,left); syncHUD(); save(); buildQuests(); toast('Награда получена'); };
+    row.appendChild(b); box.appendChild(row);
   });
 }
-function syncToolUI(){
-  if(toolSelectEl) toolSelectEl.value = String(activeTool);
-}
 
-/* =============== Init / Resize hooks =============== */
-let resizeRAF=null;
-function requestResize(){
-  if(resizeRAF) cancelAnimationFrame(resizeRAF);
-  resizeRAF = requestAnimationFrame(()=>{ resizeCanvas(); resizeRAF=null; });
-}
-window.addEventListener("resize", requestResize);
-window.addEventListener("orientationchange", ()=>{ setTimeout(requestResize, 150); });
-if(window.visualViewport){
-  window.visualViewport.addEventListener('resize', ()=>{ setTimeout(requestResize, 50); });
-}
-["pointerdown","keydown"].forEach(ev=>window.addEventListener(ev,ensureAudio,{once:true}));
-resizeCanvas(); ensureDaily(state); ensureWeekly(state);
-refreshSidebar(true,true,true);
-requestAnimationFrame(loop);
-window.addEventListener("beforeunload", ()=>{ if(state.settings.autosave) saveState(); });
-setTimeout(openStart,100);
+/* =================== SAVE =================== */
+function save(){ try{ localStorage.setItem(SAVE_KEY,JSON.stringify(S)); }catch(e){} }
+function load(){ try{ const raw=localStorage.getItem(SAVE_KEY); return raw?JSON.parse(raw):null; }catch(e){ return null; } }
+
+/* =================== UX =================== */
+const toastBox=document.getElementById('toast');
+function toast(t){ toastBox.textContent=t; toastBox.style.opacity=1; clearTimeout(toastBox._t); toastBox._t=setTimeout(()=>toastBox.style.opacity=0,1600); }
+
+/* =================== INIT =================== */
+resize(); syncHUD(); draw(); requestAnimationFrame(step);
 </script>
 </body>
 </html>
